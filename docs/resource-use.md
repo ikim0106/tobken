@@ -68,8 +68,9 @@ process identity, and prints per-window samples plus median/min/max. It creates
 no polling or telemetry inside Tobken. Profile in a separate run so sampling
 overhead does not contaminate the reported CPU counters.
 
-Correctness is checked separately: 21 tests pass, including real open-writer
-appends while idle, rate-limited publishing and atomic file replacement. The
+Correctness is checked separately: the test suite (26 tests at the latest run)
+covers real open-writer appends while idle, rate-limited publishing and atomic
+file replacement. The
 packaged `--verify` proves accounting through seed/append/restart and observes
 **0 → 80 → 0 TPS** after 400 new output tokens. The native UI test checks menu
 opening, closing, reopening and release of closed views. Performance does not

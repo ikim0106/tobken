@@ -1,4 +1,4 @@
-# Initial app verification
+# App verification
 
 Verified locally on 2026-11-10, macOS arm64, with Swift 6.3.1.
 
@@ -114,3 +114,28 @@ and the dropdown reopens successfully.
 See [resource measurements](resource-use.md) for release CPU, footprint, run
 conditions, raw samples and the sampling script. These are quiet-workload
 measurements, not a claim about peak startup or sustained output workloads.
+
+## Polish pass
+
+Verified on 2026-11-10, macOS arm64, Swift 6.3.1.
+
+`Scripts/test.sh`: **26 tests passed** (five new: unit-boundary token and rate
+formatting, whole-number rates, harness-filter fallback and duration-weighted
+Avg TPS). The universal release (`x86_64 arm64`) passed `--verify`,
+`--ui-smoke-test` and strict code-signature verification. Light and dark
+previews of the menu, the filtered menu and Settings were inspected.
+
+The smoke test now derives its expectations from the demo snapshot and also
+checks that a filter graphs the selected harness's readings and that reopening
+the menu resets the filter. Its result is in [ui-smoke.json](ui-smoke.json).
+
+The scrollbar preference moved to the volatile argument domain, so Tobken no
+longer writes `AppleShowScrollBars` to its preferences file and removes any
+value an earlier version wrote. The smoke test's overlay-scroller check still
+passes.
+
+Quiet monitoring cost was compared against `main` with both release builds
+running side by side (five ten-second windows, host load average 10–16): CPU
+median 0.015% before and 0.016% after, physical footprint 41.6 and 42.2 MiB.
+No change is claimed. Excluding unused upstream features reduced the arm64
+slice of the binary from 11.77 MB to 9.86 MB.
