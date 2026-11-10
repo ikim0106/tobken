@@ -14,6 +14,8 @@ enum Tobken {
             }
             dispatchMain()
         }
+        // Keep native scrollbars transient within Tobken, including when using a mouse.
+        UserDefaults.standard.set("WhenScrolling", forKey: "AppleShowScrollBars")
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         if let index = arguments.firstIndex(of: "--render-preview"), arguments.indices.contains(index + 1) {
@@ -152,10 +154,18 @@ final class AppController: NSObject, NSApplicationDelegate {
             throw Verification.Failure.assertion("Settings did not open")
         }
         try PreviewRenderer.capture(settingsView, to: directory.appendingPathComponent("native-settings.png"))
+        func scrollViews(in view: NSView) -> [NSScrollView] {
+            (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap { scrollViews(in: $0) }
+        }
+        let scrollers = scrollViews(in: settingsView) + scrollViews(in: view)
+        guard !scrollers.isEmpty, scrollers.allSatisfy({ $0.scrollerStyle == .overlay }) else {
+            throw Verification.Failure.assertion("Scrollbars did not use the auto-fading overlay style")
+        }
         let report: [String: Any] = ["statusTitle": title ?? "", "popoverOpened": true,
                                     "filterPreservedStatus": true, "settingsOpened": true,
                                     "chartEndpointMatchesTPS": true,
                                     "filterPreservedGlobalChart": true,
+                                    "scrollbarsUseOverlayStyle": true,
                                     "allHeight": allHeight, "filteredHeight": view.bounds.height]
         try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("ui-smoke.json"))

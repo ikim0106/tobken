@@ -5,6 +5,7 @@
   "filterPreservedGlobalChart" : true,
   "filterPreservedStatus" : true,
   "popoverOpened" : true,
+  "scrollbarsUseOverlayStyle" : true,
   "settingsOpened" : true,
   "statusTitle" : " 17.8M today · 146 TPS"
 }

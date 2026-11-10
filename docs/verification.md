@@ -73,3 +73,10 @@ past readings, retaining unknown readings as gaps, limiting the time window to
 60 seconds, and keeping the vertical scale stable when an old peak expires.
 The native smoke test also checks that the latest graph reading matches the
 displayed TPS. Light and dark previews were regenerated from the production UI.
+
+## Scrollbar behavior
+
+Tobken sets its own `AppleShowScrollBars` preference to `WhenScrolling` before
+initializing AppKit. This selects the native overlay scrollbars that fade after
+activity stops. The native smoke test checks the real `NSScrollView` instances
+in the menu and Settings use `.overlay`. System-wide preferences are untouched.
