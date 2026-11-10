@@ -6,25 +6,29 @@ import TobkenCore
 @main
 enum Tobken {
     @MainActor static func main() {
-        let arguments = CommandLine.arguments
-        if arguments.contains("--verify") {
+        let commandLine = CommandLine.arguments
+        if commandLine.contains("--verify") {
             Task { @MainActor in
                 do { print(try await Verification.run()); exit(0) }
                 catch { FileHandle.standardError.write(Data("Verification failed: \(error)\n".utf8)); exit(1) }
             }
             dispatchMain()
         }
-        // Keep native scrollbars transient within Tobken, including when using a mouse.
-        UserDefaults.standard.set("WhenScrolling", forKey: "AppleShowScrollBars")
+        // Keep native scrollbars transient within Tobken, including when using a mouse. The argument domain is
+        // volatile and outranks the global preference, so nothing is written to disk; drop the old persisted value.
+        UserDefaults.standard.removeObject(forKey: "AppleShowScrollBars")
+        var arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+        arguments["AppleShowScrollBars"] = "WhenScrolling"
+        UserDefaults.standard.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        if let index = arguments.firstIndex(of: "--render-preview"), arguments.indices.contains(index + 1) {
-            do { try PreviewRenderer.render(to: URL(fileURLWithPath: arguments[index + 1])); exit(0) }
+        if let index = commandLine.firstIndex(of: "--render-preview"), commandLine.indices.contains(index + 1) {
+            do { try PreviewRenderer.render(to: URL(fileURLWithPath: commandLine[index + 1])); exit(0) }
             catch { FileHandle.standardError.write(Data("Preview failed: \(error)\n".utf8)); exit(1) }
         }
-        let smokeIndex = arguments.firstIndex(of: "--ui-smoke-test")
-        let smokeDirectory = smokeIndex.flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
-        let controller = AppController(demo: arguments.contains("--demo") || smokeIndex != nil, smokeDirectory: smokeDirectory)
+        let smokeIndex = commandLine.firstIndex(of: "--ui-smoke-test")
+        let smokeDirectory = smokeIndex.flatMap { commandLine.indices.contains($0 + 1) ? commandLine[$0 + 1] : nil }
+        let controller = AppController(demo: commandLine.contains("--demo") || smokeIndex != nil, smokeDirectory: smokeDirectory)
         app.delegate = controller
         withExtendedLifetime(controller) { app.run() }
     }
@@ -63,12 +67,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         popover.animates = false
         popover.delegate = self
         model.menuSizeChanged = { [weak self] height in
-            self?.popover.contentSize = NSSize(width: 408, height: height)
+            guard let self, height > 0, abs(popover.contentSize.height - height) >= 0.5 else { return }
+            popover.contentSize = NSSize(width: MenuMetrics.width, height: height)
         }
         model.statusChanged = { [weak self] title in
-            guard let button = self?.statusItem?.button else { return }
-            let text = " " + title
-            if button.title != text { button.title = text }
+            self?.updateStatusTitle(title)
             self?.updateChartTimer()
         }
         model.start()
@@ -100,12 +103,31 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
 
     func applicationWillTerminate(_ notification: Notification) { model.stop() }
 
+    /// Redraws only changed text. While output is active the item only grows (in 8 pt steps), so a reading
+    /// moving between "9" and "146 TPS" does not shift neighbouring menu bar items every second.
+    private func updateStatusTitle(_ title: String) {
+        guard let item = statusItem, let button = item.button else { return }
+        let text = " " + title
+        if button.title != text { button.title = text }
+        guard (Dashboard(snapshot: model.snapshot).currentTPS ?? 0) > 0 else {
+            if item.length != NSStatusItem.variableLength { item.length = NSStatusItem.variableLength }
+            return
+        }
+        let needed = (button.intrinsicContentSize.width / 8).rounded(.up) * 8
+        if item.length == NSStatusItem.variableLength || needed > item.length { item.length = needed }
+    }
+
     @objc private func toggleMenu() {
         guard let button = statusItem?.button else { return }
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            popover.performClose(nil)
+            showContextMenu(from: button)
+            return
+        }
         if popover.isShown { popover.performClose(nil) }
         else {
             prepareMenu()
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
             updateChartTimer()
@@ -140,6 +162,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         updateChartTimer()
     }
 
+    private func showContextMenu(from button: NSStatusBarButton) {
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",").target = self
+        menu.addItem(withTitle: "Rescan Logs", action: #selector(rescanFromMenu), keyEquivalent: "").target = self
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit Tobken", action: #selector(quitFromMenu), keyEquivalent: "q").target = self
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 5), in: button)
+    }
+
+    @objc private func openSettingsFromMenu() { showSettings() }
+    @objc private func rescanFromMenu() { model.refresh() }
+    @objc private func quitFromMenu() { NSApp.terminate(nil) }
+
     func windowWillClose(_ notification: Notification) {
         if notification.object as? NSWindow === settingsWindow { settingsWindow = nil }
     }
@@ -155,7 +190,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
             window.center()
             settingsWindow = window
         }
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 

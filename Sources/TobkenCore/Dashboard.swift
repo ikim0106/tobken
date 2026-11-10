@@ -68,7 +68,7 @@ public struct Dashboard {
     public var statusTitle: String {
         if case .starting = snapshot.state { return "Tobken · …" }
         let rate = Dashboard(snapshot: snapshot).currentTPS
-        return "\(MetricFormat.tokens(snapshot.today.total)) today · \(MetricFormat.rate(rate)) TPS"
+        return "\(MetricFormat.tokens(snapshot.today.total)) today · \(MetricFormat.wholeRate(rate)) TPS"
     }
 
     public var selectedActivities: [ActivityMetrics] {

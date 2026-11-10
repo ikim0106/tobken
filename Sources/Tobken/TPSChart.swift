@@ -41,7 +41,7 @@ struct TPSChart: View {
                 Text("Now")
             }.foregroundStyle(.secondary)
         }
-        .font(.system(size: 8))
+        .font(.system(size: 9))
         .frame(width: 132)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Current TPS readings over the last 60 seconds, scale 0 to \(MetricFormat.rate(history.ceiling)) TPS")

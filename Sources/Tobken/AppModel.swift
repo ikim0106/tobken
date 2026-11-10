@@ -12,7 +12,10 @@ final class AppModel: ObservableObject {
     @Published var selectedSource: SourceKind?
     @Published var extraPaths: [String: [String]]
     @Published var locationMessage: String?
+    /// Global current-TPS readings; the menu filter never changes these.
     @Published var tpsHistory = TPSHistory()
+    /// The same readings per harness, kept only for harnesses with activity today.
+    @Published var sourceHistories: [SourceKind: TPSHistory] = [:]
     let store = SpeedStore()
     private var monitor: LiveMonitor?
     private var listener: UUID?
@@ -21,6 +24,12 @@ final class AppModel: ObservableObject {
     var menuSizeChanged: ((CGFloat) -> Void)?
 
     var dashboard: Dashboard { Dashboard(snapshot: snapshot, selectedSource: selectedSource) }
+
+    /// The graph for the open menu: global, or the selected harness's.
+    var selectedHistory: TPSHistory {
+        guard let selectedSource else { return tpsHistory }
+        return sourceHistories[selectedSource] ?? TPSHistory()
+    }
 
     init(demo: Bool = false) {
         isDemo = demo
@@ -31,6 +40,15 @@ final class AppModel: ObservableObject {
                 tpsHistory.record(at: point.time, value: point.measured.output + point.estimated.output)
             }
             tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
+            // Scale the demo curve by each harness's share of current output.
+            let total = snapshot.live.output
+            for source in snapshot.sources where total > 0 {
+                var history = TPSHistory()
+                for sample in tpsHistory.samples {
+                    history.record(at: sample.time, value: sample.value.map { $0 * source.live.output / total })
+                }
+                sourceHistories[source.kind] = history
+            }
         }
     }
 
@@ -48,6 +66,7 @@ final class AppModel: ObservableObject {
         self.snapshot = snapshot
         if snapshot.state == .running {
             tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
+            recordSources(at: snapshot.timestamp)
         }
         let valid = dashboard.validSelection(selectedSource)
         if valid != selectedSource { selectedSource = valid }
@@ -64,7 +83,16 @@ final class AppModel: ObservableObject {
     /// open menu calls this to keep the graph moving; `TPSHistory` fills the quiet seconds with zeros.
     func recordCurrentReading() {
         guard !isDemo, snapshot.state == .running else { return }
-        tpsHistory.record(at: Date(), value: Dashboard(snapshot: snapshot).currentTPS)
+        let now = Date()
+        tpsHistory.record(at: now, value: Dashboard(snapshot: snapshot).currentTPS)
+        recordSources(at: now)
+    }
+
+    private func recordSources(at time: Date) {
+        for source in snapshot.sources
+        where source.today.total > 0 || source.live.output > 0 || sourceHistories[source.kind] != nil {
+            sourceHistories[source.kind, default: TPSHistory()].record(at: time, value: source.live.output)
+        }
     }
 
     func stop() { monitor?.stop() }
@@ -79,6 +107,7 @@ final class AppModel: ObservableObject {
     private func resetReadings() {
         snapshot = .empty
         tpsHistory = TPSHistory()
+        sourceHistories = [:]
         statusChanged?(dashboard.statusTitle)
     }
 
