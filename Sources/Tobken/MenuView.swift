@@ -28,7 +28,11 @@ struct MenuView: View {
     var quit: () -> Void = {}
     @State var expanded: Set<ModelRow.ID> = []
     @State private var showAllModels = false
-    @State private var bodyHeight: CGFloat = 480
+    /// The scrolling body's applied height. It changes only when the menu opens, startup finishes, or the user
+    /// changes the layout (filter, expanding a row, "Show more"); live data never resizes the open popover.
+    @State private var bodyHeight: CGFloat = 0
+    @State private var resizeAllowedUntil = Date.distantFuture
+    @State private var picker = PickerScroll()
     private var dashboard: Dashboard { model.dashboard }
 
     var body: some View {
@@ -45,7 +49,15 @@ struct MenuView: View {
             }
             // A ScrollView has no intrinsic height: size it to its content, capped to the screen.
             .frame(height: min(bodyHeight, maxBodyHeight))
-            .onPreferenceChange(MenuContentHeight.self) { bodyHeight = $0 }
+            .onPreferenceChange(MenuContentHeight.self) { height in
+                guard height > 0, bodyHeight == 0 || Date() < resizeAllowedUntil else { return }
+                bodyHeight = height
+            }
+            .onAppear { allowResize() }
+            .onChange(of: model.selectedSource) { allowResize() }
+            .onChange(of: expanded) { allowResize() }
+            .onChange(of: showAllModels) { allowResize() }
+            .onChange(of: isStarting) { allowResize() }
             Divider()
             footer
         }
@@ -57,6 +69,13 @@ struct MenuView: View {
         })
         .onPreferenceChange(MenuTotalHeight.self) { model.menuSizeChanged?($0) }
     }
+
+    private var isStarting: Bool {
+        if case .starting = model.snapshot.state { true } else { false }
+    }
+
+    /// Lets the body settle to its new height for a moment after a layout change the user expects.
+    private func allowResize() { resizeAllowedUntil = Date().addingTimeInterval(0.5) }
 
     @ViewBuilder private var content: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -83,17 +102,34 @@ struct MenuView: View {
 
     // MARK: Header
 
-    /// Harness filters wrap onto further lines inside the card's padding, so none is clipped at the popover's corner.
+    /// Scrolls sideways inside the card's padding, so chips never reach the popover's rounded corners. An edge fades
+    /// while more chips lie beyond it.
     private var sourcePicker: some View {
-        FlowLayout(spacing: 4, lineSpacing: 4) {
-            sourceButton(nil, title: "All", symbol: "square.grid.2x2")
-            ForEach(dashboard.sources) { source in
-                sourceButton(source.kind, title: source.kind.displayName, symbol: source.kind.symbol)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                sourceButton(nil, title: "All", symbol: "square.grid.2x2")
+                ForEach(dashboard.visibleSources) { source in
+                    sourceButton(source.kind, title: source.kind.displayName, symbol: source.kind.symbol)
+                }
             }
+            // Preferences do not cross a macOS scroll view; geometry callbacks do.
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { picker.content = $0 }
         }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { picker.viewport = $0 }
+        .mask(edgeFade)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var edgeFade: some View {
+        HStack(spacing: 0) {
+            LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                .frame(width: picker.hasMoreBefore ? 20 : 0)
+            Rectangle()
+            LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                .frame(width: picker.hasMoreAfter ? 20 : 0)
+        }
     }
 
     private func sourceButton(_ source: SourceKind?, title: String, symbol: String) -> some View {
@@ -282,7 +318,7 @@ struct MenuView: View {
     private var harnesses: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Harnesses").font(.system(size: MenuMetrics.bodyFont, weight: .semibold))
-            ForEach(dashboard.sources.filter { $0.today.total > 0 || $0.live.output > 0 }) { source in
+            ForEach(dashboard.visibleSources.filter { $0.today.total > 0 || $0.live.output > 0 }) { source in
                 Button { model.selectedSource = source.kind } label: {
                     HStack(spacing: 7) {
                         Image(systemName: source.kind.symbol).frame(width: 14)
@@ -338,54 +374,12 @@ struct MenuView: View {
     }
 }
 
-/// Left-aligned rows that wrap when the next item would not fit.
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 4
-    var lineSpacing: CGFloat = 4
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = rows(for: subviews, width: proposal.width ?? .infinity)
-        let width = rows.map(\.width).max() ?? 0
-        let height = rows.map(\.height).reduce(0, +) + lineSpacing * CGFloat(max(rows.count - 1, 0))
-        return CGSize(width: proposal.width ?? width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var y = bounds.minY
-        for row in rows(for: subviews, width: bounds.width) {
-            var x = bounds.minX
-            for index in row.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
-                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: ProposedViewSize(size))
-                x += size.width + spacing
-            }
-            y += row.height + lineSpacing
-        }
-    }
-
-    private struct Row {
-        var indices: [Int] = []
-        var width: CGFloat = 0
-        var height: CGFloat = 0
-    }
-
-    private func rows(for subviews: Subviews, width maxWidth: CGFloat) -> [Row] {
-        var rows: [Row] = []
-        var current = Row()
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
-            if needed > maxWidth, !current.indices.isEmpty {
-                rows.append(current)
-                current = Row()
-            }
-            current.width = current.indices.isEmpty ? size.width : current.width + spacing + size.width
-            current.height = max(current.height, size.height)
-            current.indices.append(index)
-        }
-        if !current.indices.isEmpty { rows.append(current) }
-        return rows
-    }
+/// Where the filter row's content sits relative to its viewport, to fade only the edges with chips beyond them.
+private struct PickerScroll: Equatable {
+    var content: CGRect = .zero
+    var viewport: CGRect = .zero
+    var hasMoreBefore: Bool { content.width > 0 && content.minX < viewport.minX - 1 }
+    var hasMoreAfter: Bool { content.width > 0 && content.maxX > viewport.maxX + 1 }
 }
 
 private struct MenuContentHeight: PreferenceKey {

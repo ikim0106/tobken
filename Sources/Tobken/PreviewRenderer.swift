@@ -26,7 +26,7 @@ enum PreviewRenderer {
             filtered.selectedSource = .claudeCode
             try render(MenuView(model: filtered).padding(1).background(background), appearance: appearance,
                        to: directory.appendingPathComponent("tobken-filtered-\(name).png"))
-            // Many detected harnesses: the filter row must wrap inside the padding, not run into the corner.
+            // Many detected harnesses: the filter row scrolls inside the padding and fades at its edges.
             let many = AppModel(demo: true)
             for kind in [SourceKind.claudeDesktop, .gemini, .droid, .devin, .grokBuild] {
                 many.snapshot.sources.append(SourceStatus(kind: kind, enabled: true, rootPath: "", available: true,
@@ -51,7 +51,8 @@ enum PreviewRenderer {
         window.contentView = view
         view.frame = CGRect(origin: .zero, size: size)
         view.layoutSubtreeIfNeeded()
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        view.layoutSubtreeIfNeeded()
         window.display()
         try capture(view, to: file)
         print(file.path)

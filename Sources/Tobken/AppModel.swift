@@ -12,6 +12,8 @@ final class AppModel: ObservableObject {
     @Published var selectedSource: SourceKind?
     @Published var extraPaths: [String: [String]]
     @Published var locationMessage: String?
+    /// Harnesses hidden from the menu's filter row and Harnesses list; persisted, and still counted in totals.
+    @Published var hiddenSources: Set<SourceKind>
     /// Global current-TPS readings; the menu filter never changes these.
     @Published var tpsHistory = TPSHistory()
     /// The same readings per harness, kept only for harnesses with activity today.
@@ -23,7 +25,7 @@ final class AppModel: ObservableObject {
     var statusChanged: ((String) -> Void)?
     var menuSizeChanged: ((CGFloat) -> Void)?
 
-    var dashboard: Dashboard { Dashboard(snapshot: snapshot, selectedSource: selectedSource) }
+    var dashboard: Dashboard { Dashboard(snapshot: snapshot, selectedSource: selectedSource, hiddenSources: hiddenSources) }
 
     /// The graph for the open menu: global, or the selected harness's.
     var selectedHistory: TPSHistory {
@@ -34,6 +36,8 @@ final class AppModel: ObservableObject {
     init(demo: Bool = false) {
         isDemo = demo
         extraPaths = demo ? [:] : (UserDefaults.standard.dictionary(forKey: "extraPaths") as? [String: [String]] ?? [:])
+        let hidden = demo ? [] : (UserDefaults.standard.stringArray(forKey: "hiddenSources") ?? [])
+        hiddenSources = Set(hidden.compactMap(SourceKind.init(rawValue:)))
         if demo {
             snapshot = Demo.snapshot()
             for point in snapshot.history {
@@ -134,6 +138,13 @@ final class AppModel: ObservableObject {
             locations[folder] = [.automatic] + (extraPaths[folder.rawValue] ?? []).map(DataLocation.path)
         }
         return MonitorConfiguration(locations: locations)
+    }
+
+    func setShown(_ shown: Bool, for source: SourceKind) {
+        if shown { hiddenSources.remove(source) } else { hiddenSources.insert(source) }
+        if !isDemo { UserDefaults.standard.set(hiddenSources.map(\.rawValue).sorted(), forKey: "hiddenSources") }
+        let valid = dashboard.validSelection(selectedSource)
+        if valid != selectedSource { selectedSource = valid }
     }
 
     func canAddLocation(for folder: TranscriptFolder) -> Bool {

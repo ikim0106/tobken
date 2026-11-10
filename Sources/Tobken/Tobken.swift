@@ -109,6 +109,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         guard let item = statusItem, let button = item.button else { return }
         let text = " " + title
         if button.title != text { button.title = text }
+        // The popover is anchored to this item: while it is open, keep the width (grow only if text would clip).
+        if popover.isShown {
+            let current = item.length == NSStatusItem.variableLength ? button.frame.width : item.length
+            item.length = max(current, button.intrinsicContentSize.width.rounded(.up))
+            return
+        }
         guard (Dashboard(snapshot: model.snapshot).currentTPS ?? 0) > 0 else {
             if item.length != NSStatusItem.variableLength { item.length = NSStatusItem.variableLength }
             return
@@ -127,6 +133,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if popover.isShown { popover.performClose(nil) }
         else {
             prepareMenu()
+            // Freeze the anchor's width at what is on screen, so the open popover never slides sideways.
+            if let item = statusItem, item.length == NSStatusItem.variableLength { item.length = button.frame.width }
             NSApp.activate()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
@@ -136,6 +144,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
 
     func popoverDidClose(_ notification: Notification) {
         popover.contentViewController = nil
+        updateStatusTitle(model.dashboard.statusTitle)
         updateChartTimer()
     }
 

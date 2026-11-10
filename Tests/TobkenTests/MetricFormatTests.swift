@@ -49,4 +49,15 @@ struct MetricFormatTests {
         let codex = Dashboard(snapshot: snapshot, selectedSource: .codex)
         #expect(abs((codex.averageTPS ?? 0) - 88.4) < 0.1)
     }
+
+    @Test func hiddenHarnessesLeaveTheMenuButKeepEveryTotal() {
+        let snapshot = Demo.snapshot()
+        let all = Dashboard(snapshot: snapshot)
+        let hidden = Dashboard(snapshot: snapshot, hiddenSources: [.codex])
+        #expect(hidden.visibleSources.map(\.kind) == all.sources.map(\.kind).filter { $0 != .codex })
+        #expect(hidden.validSelection(.codex) == nil, "a hidden harness cannot stay selected")
+        #expect(hidden.totals == all.totals)
+        #expect(hidden.models.count == all.models.count)
+        #expect(hidden.statusTitle == all.statusTitle)
+    }
 }

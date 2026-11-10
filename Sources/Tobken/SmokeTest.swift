@@ -57,6 +57,21 @@ extension AppController {
         }
         try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-filtered.png"))
 
+        // New data while open (another model row) must not resize or move the popover; the body scrolls instead.
+        try await Task.sleep(for: .milliseconds(600))
+        let steadyFrame = view.window?.frame
+        var grown = model.snapshot
+        grown.timestamp = grown.timestamp.addingTimeInterval(1)
+        var extra = ActivityMetrics(key: ActivityKey(source: filter, model: "smoke-extra-model"))
+        extra.totals = TokenTotals(requests: 1, input: 1_000, output: 100)
+        grown.activities.append(extra)
+        model.receive(grown)
+        try await Task.sleep(for: .milliseconds(300))
+        guard model.dashboard.models.count == filteredModels + 1 else { throw fail("Extra model row did not arrive") }
+        guard view.window?.frame == steadyFrame else {
+            throw fail("Live data moved or resized the open popover: \(String(describing: steadyFrame)) → \(String(describing: view.window?.frame))")
+        }
+
         showSettings()
         try await Task.sleep(for: .milliseconds(200))
         guard popover.contentViewController == nil else { throw fail("Closing the menu did not release its view") }
@@ -86,6 +101,7 @@ extension AppController {
                                      "filterPreservedGlobalChart": true,
                                      "filterGraphsSelectedHarness": true,
                                      "reopenResetsFilter": true,
+                                     "liveDataKeepsPopoverSteady": true,
                                      "scrollbarsUseOverlayStyle": true,
                                      "closedViewsReleased": true, "menuReopened": true,
                                      "allHeight": allHeight, "filteredHeight": view.bounds.height]

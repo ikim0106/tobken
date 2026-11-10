@@ -59,10 +59,13 @@ public struct ModelRow: Identifiable {
 public struct Dashboard {
     public let snapshot: SpeedSnapshot
     public var selectedSource: SourceKind?
+    /// Harnesses the user hid from the menu. They still count toward every total; the status item stays global.
+    public var hiddenSources: Set<SourceKind>
 
-    public init(snapshot: SpeedSnapshot, selectedSource: SourceKind? = nil) {
+    public init(snapshot: SpeedSnapshot, selectedSource: SourceKind? = nil, hiddenSources: Set<SourceKind> = []) {
         self.snapshot = snapshot
         self.selectedSource = selectedSource
+        self.hiddenSources = hiddenSources
     }
 
     public var statusTitle: String {
@@ -85,10 +88,11 @@ public struct Dashboard {
     /// Today's output divided by summed timed request durations for the selection.
     public var averageTPS: Double? { summary.averageTPS }
 
-    /// Returns `source` if it is still listed, otherwise nil ("All"), so a vanished harness cannot strand the menu.
+    /// Returns `source` if it is still listed and shown, otherwise nil ("All"), so a vanished or hidden harness cannot
+    /// strand the menu.
     public func validSelection(_ source: SourceKind?) -> SourceKind? {
         guard let source else { return nil }
-        return sources.contains { $0.kind == source } ? source : nil
+        return visibleSources.contains { $0.kind == source } ? source : nil
     }
 
     public var totals: TokenTotals {
@@ -109,8 +113,14 @@ public struct Dashboard {
         snapshot.agents.filter { $0.phase == .generating && (selectedSource == nil || $0.source == selectedSource) }.count
     }
 
+    /// Harnesses that are detected or active today.
     public var sources: [SourceStatus] {
         snapshot.sources.filter { $0.available || $0.today.total > 0 || $0.live.output > 0 }
+    }
+
+    /// `sources` without the ones hidden from the menu: the filter row and the Harnesses list.
+    public var visibleSources: [SourceStatus] {
+        sources.filter { !hiddenSources.contains($0.kind) }
     }
 
     public var models: [ModelRow] {

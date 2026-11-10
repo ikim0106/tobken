@@ -26,6 +26,22 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
+                if menuSources.isEmpty {
+                    Text("Harnesses appear here once their logs are found.").foregroundStyle(.secondary)
+                }
+                ForEach(menuSources, id: \.self) { source in
+                    Toggle(isOn: Binding(get: { !model.hiddenSources.contains(source) },
+                                         set: { model.setShown($0, for: source) })) {
+                        Label(source.displayName, systemImage: source.symbol)
+                    }
+                }
+            } header: {
+                Text("Show in menu")
+            } footer: {
+                Text("Hidden harnesses are left out of the menu's filter row and Harnesses list. Their tokens still count in every total, including the menu bar.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
                 if detected.isEmpty {
                     Text("No supported logs found yet. Add a location for a harness below.")
                         .foregroundStyle(.secondary)
@@ -82,6 +98,12 @@ struct SettingsView: View {
                 }.foregroundStyle(.secondary)
             }
         }.padding(.vertical, 2)
+    }
+
+    /// Detected or active harnesses, plus any hidden one so it can be shown again.
+    private var menuSources: [SourceKind] {
+        let listed = Set(model.dashboard.sources.map(\.kind)).union(model.hiddenSources)
+        return SourceKind.allCases.filter(listed.contains)
     }
 
     private func status(for source: SourceKind) -> SourceStatus? {
