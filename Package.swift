@@ -20,7 +20,16 @@ let package = Package(
         .target(
             name: "AgentSpeedCore",
             dependencies: ["CZstd"],
-            path: "Vendor/AgentSpeed/Sources/AgentSpeedCore"
+            path: "Vendor/AgentSpeed/Sources/AgentSpeedCore",
+            // Upstream features Tobken never starts: LAN sharing, profiles, characters, price/exchange-rate
+            // fetchers, money formatting, the demo driver and the self-updater. Kept on disk so the pin stays
+            // diffable against upstream; see Vendor/AgentSpeed/UPSTREAM.md.
+            exclude: [
+                "Characters", "DemoDriver.swift", "Lan", "Money", "Network", "Profile",
+                "Reporting/ReportStreamSession.swift", "Reporting/URLSessionReportStream.swift",
+                "Updates/Release.swift", "Updates/ReleaseNotes.swift", "Updates/SemanticVersion.swift",
+                "Updates/UpdateSchedule.swift", "Updates/UpdateURLPolicy.swift", "Updates/ZipDirectory.swift",
+            ]
         ),
         .target(name: "TobkenCore", dependencies: ["AgentSpeedCore"]),
         .executableTarget(name: "Tobken", dependencies: ["TobkenCore", "AgentSpeedCore"]),

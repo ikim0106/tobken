@@ -34,6 +34,23 @@ Local changes:
   unchanged, while retaining a separate reconciliation signature so a live
   refresh cannot hide deletions. Quiet-session memory compaction still runs.
 
+## Excluded from the build
+
+`Package.swift` excludes these upstream paths from the `AgentSpeedCore`
+target. The files stay on disk, unmodified, so the pin remains diffable:
+
+- `Characters`, `Lan`, `Money`, `Network`, `Profile`, `DemoDriver.swift`.
+- `Updates/` except `Checksums.swift` (`Remote` uses its `FileDigest`).
+- `Reporting/ReportStreamSession.swift` and
+  `Reporting/URLSessionReportStream.swift`.
+
+The rest of `Reporting`, `Remote`, `Pricing`, `History`, `Perf`, `Modes`,
+`WorkSignals`, `Traffic`, `Unpriced` and `Intelligence` are referenced by the
+engine, ledger or snapshot types and stay compiled. In particular
+`ReportTransport` (URLSession) is still linked, but Tobken never constructs a
+report client, remote coordinator or price book. Excluding more would require
+editing kept engine files; reassess when the pin is next upgraded.
+
 Request TPS includes first-token wait and uses upstream's minimum 500 ms
 duration. TTFT is an estimate of first logged content latency, available only
 when a response records a valid start and first-content timestamp. Percentiles
