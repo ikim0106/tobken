@@ -36,10 +36,10 @@ enum Tobken {
 
 @MainActor
 final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowDelegate {
-    private let model: AppModel
-    private var statusItem: NSStatusItem?
-    private let popover = NSPopover()
-    private var settingsWindow: NSWindow?
+    let model: AppModel
+    private(set) var statusItem: NSStatusItem?
+    let popover = NSPopover()
+    private(set) var settingsWindow: NSWindow?
     private var smokeDirectory: String?
     /// Moves the graph while the menu is open after output goes quiet; never runs with the menu closed.
     private var chartTimer: Timer?
@@ -117,7 +117,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if item.length == NSStatusItem.variableLength || needed > item.length { item.length = needed }
     }
 
-    @objc private func toggleMenu() {
+    @objc func toggleMenu() {
         guard let button = statusItem?.button else { return }
         if NSApp.currentEvent?.type == .rightMouseUp {
             popover.performClose(nil)
@@ -179,7 +179,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if notification.object as? NSWindow === settingsWindow { settingsWindow = nil }
     }
 
-    private func showSettings() {
+    func showSettings() {
         popover.performClose(nil)
         if settingsWindow == nil {
             let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: model)))
@@ -194,119 +194,5 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         }
         NSApp.activate()
         settingsWindow?.makeKeyAndOrderFront(nil)
-    }
-
-    private func smokeTest(directory: URL) async throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try await Task.sleep(for: .milliseconds(500))
-        let title = statusItem?.button?.title
-        guard popover.contentViewController == nil else {
-            throw Verification.Failure.assertion("Closed menu retained its SwiftUI view")
-        }
-        guard title?.contains("17.8M today") == true else { throw Verification.Failure.assertion("Wrong native status title") }
-        guard model.tpsHistory.samples.last?.value == model.dashboard.currentTPS else {
-            throw Verification.Failure.assertion("Chart endpoint differs from displayed TPS")
-        }
-        guard let button = statusItem?.button, let action = button.action else {
-            throw Verification.Failure.assertion("Status item has no button/action")
-        }
-        let sent = NSApp.sendAction(action, to: button.target, from: button)
-        try await Task.sleep(for: .milliseconds(350))
-        guard popover.isShown, let view = popover.contentViewController?.view, view.bounds.height > 300 else {
-            throw Verification.Failure.assertion("Action sent=\(sent), button=\(button.bounds), dropdown shown=\(popover.isShown), bounds=\(String(describing: popover.contentViewController?.view.bounds))")
-        }
-        try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-menu.png"))
-        let allHeight = view.bounds.height
-        model.selectedSource = .claudeCode
-        try await Task.sleep(for: .milliseconds(200))
-        guard statusItem?.button?.title == title, model.dashboard.models.count == 2 else {
-            throw Verification.Failure.assertion("Filter affected global status or wrong model count")
-        }
-        guard view.bounds.height < allHeight else {
-            throw Verification.Failure.assertion("Filtered menu did not shrink: all=\(allHeight), filtered=\(view.bounds.height)")
-        }
-        var next = model.snapshot
-        next.timestamp = next.timestamp.addingTimeInterval(1)
-        next.live.output = 166
-        next.activities[0].liveTPS += 20
-        model.receive(next)
-        guard model.tpsHistory.samples.last?.value == 166, model.dashboard.currentTPS == 54,
-              statusItem?.button?.title.contains("166 TPS") == true else {
-            throw Verification.Failure.assertion("Menu filter changed the global TPS history")
-        }
-        try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-filtered.png"))
-        showSettings()
-        try await Task.sleep(for: .milliseconds(200))
-        guard popover.contentViewController == nil else {
-            throw Verification.Failure.assertion("Closing the menu did not release its view")
-        }
-        guard settingsWindow?.isVisible == true, let settingsView = settingsWindow?.contentView else {
-            throw Verification.Failure.assertion("Settings did not open")
-        }
-        try PreviewRenderer.capture(settingsView, to: directory.appendingPathComponent("native-settings.png"))
-        func scrollViews(in view: NSView) -> [NSScrollView] {
-            (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap { scrollViews(in: $0) }
-        }
-        let scrollers = scrollViews(in: settingsView) + scrollViews(in: view)
-        guard !scrollers.isEmpty, scrollers.allSatisfy({ $0.scrollerStyle == .overlay }) else {
-            throw Verification.Failure.assertion("Scrollbars did not use the auto-fading overlay style")
-        }
-        settingsWindow?.close()
-        guard settingsWindow == nil else {
-            throw Verification.Failure.assertion("Closing Settings did not release its window")
-        }
-        toggleMenu()
-        guard popover.isShown, popover.contentViewController != nil else {
-            throw Verification.Failure.assertion("Menu did not reopen")
-        }
-        popover.performClose(nil)
-        guard popover.contentViewController == nil else {
-            throw Verification.Failure.assertion("Reopened menu did not release its view")
-        }
-        let report: [String: Any] = ["statusTitle": title ?? "", "popoverOpened": true,
-                                    "filterPreservedStatus": true, "settingsOpened": true,
-                                    "chartEndpointMatchesTPS": true,
-                                    "filterPreservedGlobalChart": true,
-                                    "scrollbarsUseOverlayStyle": true,
-                                    "closedViewsReleased": true, "menuReopened": true,
-                                    "allHeight": allHeight, "filteredHeight": view.bounds.height]
-        try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
-            .write(to: directory.appendingPathComponent("ui-smoke.json"))
-    }
-}
-
-@MainActor
-enum PreviewRenderer {
-    static func capture(_ view: NSView, to file: URL) throws {
-        view.layoutSubtreeIfNeeded()
-        guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { throw Verification.Failure.assertion("No bitmap") }
-        view.cacheDisplay(in: view.bounds, to: bitmap)
-        guard let png = bitmap.representation(using: .png, properties: [:]) else { throw Verification.Failure.assertion("No PNG") }
-        try png.write(to: file)
-    }
-
-    static func render(to directory: URL) throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let model = AppModel(demo: true)
-            let view = NSHostingView(rootView: MenuView(model: model)
-                .padding(1)
-                .background(name == "dark" ? Color(red: 0.16, green: 0.16, blue: 0.17) : Color(red: 0.96, green: 0.96, blue: 0.96)))
-            view.appearance = NSAppearance(named: appearance)
-            let size = view.fittingSize
-            let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
-            window.isReleasedWhenClosed = false
-            window.appearance = view.appearance
-            window.backgroundColor = NSColor.windowBackgroundColor
-            window.contentView = view
-            view.frame = CGRect(origin: .zero, size: size)
-            view.layoutSubtreeIfNeeded()
-            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
-            window.display()
-            let file = directory.appendingPathComponent("tobken-\(name).png")
-            try capture(view, to: file)
-            print(file.path)
-            window.close()
-        }
     }
 }
