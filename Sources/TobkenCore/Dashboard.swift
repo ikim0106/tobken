@@ -39,6 +39,31 @@ public enum MetricFormat {
             : String(format: "%.1f s", milliseconds / 1_000)
     }
 
+    /// Spend at API list prices, or nil when nothing could be priced (unknown is not $0). "≥" marks a lower bound
+    /// when some requests have no known price.
+    public static func cost(_ tally: CostTally, requests: Int) -> String? {
+        guard requests > 0, !tally.isUnknown(requests: requests) else { return nil }
+        let prefix = tally.unpricedRequests > 0 ? "≥ " : ""
+        return prefix + usd(micro: tally.costMicroUsd)
+    }
+
+    public static func usd(micro: Int64) -> String {
+        let dollars = Double(max(micro, 0)) / 1_000_000
+        if micro == 0 { return "$0.00" }
+        if dollars < 0.01 { return "<$0.01" }
+        if (dollars * 100).rounded() / 100 < 1_000 { return String(format: "$%.2f", dollars) }
+        return "$" + tokens(Int(dollars.rounded()))
+    }
+
+    /// Tooltip for a cost: what it means and what it leaves out.
+    public static func costHelp(_ tally: CostTally, requests: Int) -> String {
+        var text = "Estimated at API list prices from token usage. Subscription plans are billed differently."
+        if tally.unpricedRequests > 0 {
+            text += " \(exact(tally.unpricedRequests)) of \(exact(requests)) requests have no known price and are not included."
+        }
+        return text
+    }
+
     public static func exact(_ value: Int) -> String {
         value.formatted(.number.locale(Locale(identifier: "en_US")))
     }
@@ -83,6 +108,11 @@ public struct Dashboard {
         selectedActivities.reduce(into: ActivityMetrics(key: ActivityKey(source: selectedSource ?? .codex, model: nil))) {
             $0.merge($1)
         }
+    }
+
+    /// Today's spend for the selection at list prices.
+    public var cost: CostTally {
+        selectedSource == nil ? snapshot.todayCost : summary.cost
     }
 
     /// Today's output divided by summed timed request durations for the selection.

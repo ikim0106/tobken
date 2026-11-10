@@ -25,6 +25,8 @@ public struct ActivityMetrics: Equatable, Sendable, Identifiable {
     public var durationBins = [Int](repeating: 0, count: PerfLatency.bucketCount)
     public var liveTPS = 0.0
     public var estimatedTPS = 0.0
+    /// Today's cost at list prices, with the count of requests that had no known price.
+    public var cost = CostTally()
 
     public init(key: ActivityKey) { self.key = key }
 
@@ -46,6 +48,7 @@ public struct ActivityMetrics: Equatable, Sendable, Identifiable {
         totals.cacheWriteInput += other.totals.cacheWriteInput
         totals.output += other.totals.output
         totals.reasoning += other.totals.reasoning
+        cost.add(other.cost)
         timedOutput += other.timedOutput
         durationMs += other.durationMs
         timedRequests += other.timedRequests
@@ -59,6 +62,7 @@ public struct ActivityMetrics: Equatable, Sendable, Identifiable {
 
     mutating func apply(_ record: ResponseRecord, sign: Int) {
         totals.add(record.usage, sign: sign, requestCount: record.requestCount)
+        cost.add(record.costMicroUsd, sign: sign, requestCount: record.requestCount)
         guard record.isFinal, let timed = TimedResponse(record) else { return }
         timedOutput += Int64(sign) * Int64(record.usage.output)
         durationMs += Int64(sign) * timed.durationMs

@@ -11,7 +11,9 @@ is started by Tobken; it uses the local `LiveMonitor` only, without pricing.
 
 Local changes:
 
-- `ActivityMetrics.swift` adds per-source/provider/model daily statistics.
+- `ActivityMetrics.swift` adds per-source/provider/model daily statistics,
+  including today's `CostTally` from each record's `costMicroUsd`, so model
+  rows can show spend without another scan.
 - `DayLedger` updates these in the existing replace path, including subtraction
   of provisional contributions. It remains the sole owner of daily accounting.
 - `LiveWindow` projects the same live output contributions by activity key.
@@ -46,7 +48,9 @@ Local changes:
 `Package.swift` excludes these upstream paths from the `AgentSpeedCore`
 target. The files stay on disk, unmodified, so the pin remains diffable:
 
-- `Characters`, `Lan`, `Money`, `Network`, `Profile`, `DemoDriver.swift`.
+- `Characters`, `Lan`, `Money`, `Profile`, `DemoDriver.swift`.
+- `Network/ExchangeRateSync.swift`. The rest of `Network` (the price-table
+  sync and its URLSession transport) is used for Tobken's daily price update.
 - `Updates/` except `Checksums.swift` (`Remote` uses its `FileDigest`).
 - `Reporting/ReportStreamSession.swift` and
   `Reporting/URLSessionReportStream.swift`.
@@ -55,7 +59,7 @@ The rest of `Reporting`, `Remote`, `Pricing`, `History`, `Perf`, `Modes`,
 `WorkSignals`, `Traffic`, `Unpriced` and `Intelligence` are referenced by the
 engine, ledger or snapshot types and stay compiled. In particular
 `ReportTransport` (URLSession) is still linked, but Tobken never constructs a
-report client, remote coordinator or price book. Excluding more would require
+report client or remote coordinator. Excluding more would require
 editing kept engine files; reassess when the pin is next upgraded.
 
 Request TPS includes first-token wait and uses upstream's minimum 500 ms

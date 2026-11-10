@@ -125,4 +125,24 @@ struct AccountingTests {
         let report = try await Verification.run()
         #expect(report.hasPrefix("PASS:"))
     }
+
+    @Test func bundledPricesCostModelsThroughTheLedger() {
+        var engine = SpeedEngine(pricing: PriceBook())
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        engine.upsert(response("priced", source: .claudeCode, model: "claude-sonnet-4-5", input: 1_000_000, output: 100_000,
+                               start: now - 5_000, end: now), project: "", isCompletion: true, emitsEvents: false)
+        engine.upsert(response("unpriced", model: "fixture-model-without-a-price", start: now - 5_000, end: now),
+                      project: "", isCompletion: true, emitsEvents: false)
+        let result = engine.advance(nowMs: now, todayStartMs: now - 60_000, emitsEvents: false)
+        let priced = result.activities.first { $0.key.model == "claude-sonnet-4-5" }
+        #expect((priced?.cost.costMicroUsd ?? 0) > 0)
+        #expect(priced?.cost.unpricedRequests == 0)
+        #expect(result.todayCost.unpricedRequests == 1, "an unknown model stays unpriced, never $0")
+        #expect(result.todayCost.costMicroUsd == result.activities.reduce(0) { $0 + $1.cost.costMicroUsd })
+        var snapshot = SpeedSnapshot.empty
+        snapshot.todayCost = result.todayCost
+        snapshot.activities = result.activities
+        snapshot.today = result.today
+        #expect(MetricFormat.cost(Dashboard(snapshot: snapshot).cost, requests: result.today.requests)?.hasPrefix("≥ $") == true)
+    }
 }

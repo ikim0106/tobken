@@ -26,6 +26,25 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
+                Toggle("Show costs beside token counts", isOn: $model.showCosts)
+                if !model.isDemo {
+                    Toggle("Update prices daily", isOn: $model.updatesPrices)
+                        .onChange(of: model.updatesPrices) { _, enabled in if enabled { model.checkPrices() } }
+                    HStack {
+                        Text(model.priceStatus).font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Check Now") { model.checkPrices(force: true) }
+                    }
+                }
+            } header: {
+                Text("Costs")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Costs are estimates at API list prices from token usage; subscription plans are billed differently. Requests without a known price are left out and marked with ≥. Price updates download the public table below once a day; nothing about your usage is sent.")
+                    Link("Price table source", destination: PriceTableSync.sourcePage)
+                }.font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
                 if menuSources.isEmpty {
                     Text("Harnesses appear here once their logs are found.").foregroundStyle(.secondary)
                 }

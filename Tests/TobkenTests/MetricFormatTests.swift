@@ -60,4 +60,16 @@ struct MetricFormatTests {
         #expect(hidden.models.count == all.models.count)
         #expect(hidden.statusTitle == all.statusTitle)
     }
+
+    @Test func costsKeepUnknownDistinctFromZeroAndMarkLowerBounds() {
+        #expect(MetricFormat.cost(CostTally(), requests: 0) == nil)
+        #expect(MetricFormat.cost(CostTally(costMicroUsd: 0, unpricedRequests: 3), requests: 3) == nil, "nothing priced is unknown")
+        #expect(MetricFormat.cost(CostTally(costMicroUsd: 0), requests: 2) == "$0.00")
+        #expect(MetricFormat.cost(CostTally(costMicroUsd: 4_000), requests: 1) == "<$0.01")
+        #expect(MetricFormat.cost(CostTally(costMicroUsd: 12_345_678), requests: 9) == "$12.35")
+        #expect(MetricFormat.cost(CostTally(costMicroUsd: 12_345_678, unpricedRequests: 2), requests: 9) == "≥ $12.35")
+        #expect(MetricFormat.usd(micro: 999_996_000) == "$1.0K")
+        #expect(MetricFormat.usd(micro: 15_400_000_000) == "$15.4K")
+        #expect(MetricFormat.costHelp(CostTally(unpricedRequests: 2), requests: 9).contains("2 of 9"))
+    }
 }

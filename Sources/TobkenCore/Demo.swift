@@ -14,6 +14,9 @@ public enum Demo {
             metrics.timedRequests = requests
             metrics.liveTPS = live
             metrics.estimatedTPS = live
+            // Synthetic spend: about $1.25 per million uncached input, $0.125 cached, $10 output.
+            let uncached = Double(input - input * 3 / 4)
+            metrics.cost = CostTally(costMicroUsd: Int64(uncached * 1.25 + Double(input * 3 / 4) * 0.125 + Double(output) * 10))
             if let latency { metrics.latencyBins[PerfLatency.bucket(latency)] = requests }
             metrics.durationBins[PerfLatency.bucket(12_000)] = requests
             return metrics
@@ -32,6 +35,7 @@ public enum Demo {
         snapshot.state = .running
         snapshot.activities = activities
         snapshot.today = all.totals
+        snapshot.todayCost = all.cost
         snapshot.live = Rate(output: all.liveTPS)
         snapshot.averageToday = all.averageTPS
         snapshot.liveEstimatedShare = 1
@@ -40,9 +44,11 @@ public enum Demo {
         snapshot.sources = [SourceKind.codex, .claudeCode, .opencode].map { source in
             var metrics = ActivityMetrics(key: ActivityKey(source: source, model: nil))
             activities.filter { $0.key.source == source }.forEach { metrics.merge($0) }
-            return SourceStatus(kind: source, enabled: true, rootPath: "", available: true,
-                                sessionCount: 12, live: Rate(output: metrics.liveTPS), today: metrics.totals,
-                                activeAgents: metrics.liveTPS > 0 ? 1 : 0)
+            var status = SourceStatus(kind: source, enabled: true, rootPath: "", available: true,
+                                      sessionCount: 12, live: Rate(output: metrics.liveTPS), today: metrics.totals,
+                                      activeAgents: metrics.liveTPS > 0 ? 1 : 0)
+            status.todayCost = metrics.cost
+            return status
         }
         // A minute of readings that ends at the current value, as the live graph would.
         let current = all.liveTPS

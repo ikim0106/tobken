@@ -9,7 +9,7 @@ enum MenuMetrics {
     static let smallFont: CGFloat = 11
     static let captionFont: CGFloat = 10
     static let visibleModels = 6
-    static let tokensColumn: CGFloat = 56
+    static let tokensColumn: CGFloat = 64
     static let averageColumn: CGFloat = 60
     static let ttftColumn: CGFloat = 60
     /// Room left for the menu bar and the popover's own chrome when capping the scrolling body.
@@ -166,6 +166,7 @@ struct MenuView: View {
                     .monospacedDigit().help("\(MetricFormat.exact(dashboard.totals.total)) tokens")
                 Text("tokens today").foregroundStyle(.secondary)
                 Spacer()
+                costText(dashboard.cost, requests: dashboard.totals.requests, size: 13)
             }
             GeometryReader { geometry in
                 HStack(spacing: 2) {
@@ -287,7 +288,10 @@ struct MenuView: View {
                         Text(([row.sources.map(\.displayName).joined(separator: ", ")] + [row.provider].compactMap { $0 }).joined(separator: " · "))
                             .font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary).lineLimit(1)
                     }.frame(maxWidth: .infinity, alignment: .leading)
-                    Text(MetricFormat.tokens(row.metrics.totals.total)).frame(width: MenuMetrics.tokensColumn, alignment: .trailing)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(MetricFormat.tokens(row.metrics.totals.total))
+                        costText(row.metrics.cost, requests: row.metrics.totals.requests, size: MenuMetrics.captionFont)
+                    }.frame(width: MenuMetrics.tokensColumn, alignment: .trailing)
                     Text(MetricFormat.rate(row.metrics.averageTPS)).frame(width: MenuMetrics.averageColumn, alignment: .trailing)
                         .help("Average TPS today, including TTFT. Expand for current TPS and sample counts.")
                     Text(MetricFormat.latency(row.metrics.ttftP50)).frame(width: MenuMetrics.ttftColumn, alignment: .trailing)
@@ -301,6 +305,10 @@ struct MenuView: View {
                 VStack(spacing: 7) {
                     detail("Current TPS", MetricFormat.rate(row.metrics.liveTPS))
                     detail("Input / output", "\(MetricFormat.tokens(row.metrics.totals.input)) / \(MetricFormat.tokens(row.metrics.totals.output))")
+                    if model.showCosts {
+                        detail("Cost at API prices", MetricFormat.cost(row.metrics.cost, requests: row.metrics.totals.requests) ?? "No known price")
+                            .help(MetricFormat.costHelp(row.metrics.cost, requests: row.metrics.totals.requests))
+                    }
                     detail("TTFT p95", MetricFormat.latency(row.metrics.ttftP95))
                         .help("Shown with at least 20 timed samples.")
                     detail("Requests · TPS / TTFT samples", "\(row.metrics.totals.requests) · \(row.metrics.timedRequests) / \(row.metrics.latencySamples)")
@@ -327,6 +335,7 @@ struct MenuView: View {
                         if source.live.output > 0 {
                             Text("\(MetricFormat.wholeRate(source.live.output)) TPS now").foregroundStyle(.secondary)
                         }
+                        costText(source.todayCost, requests: source.today.requests, size: MenuMetrics.captionFont)
                         Text(MetricFormat.tokens(source.today.total)).monospacedDigit()
                         Image(systemName: "chevron.right").font(.system(size: 8)).foregroundStyle(.secondary)
                     }.contentShape(Rectangle())
@@ -360,6 +369,15 @@ struct MenuView: View {
             Button("Quit", action: quit).keyboardShortcut("q")
         }.buttonStyle(.plain).foregroundStyle(.secondary)
             .padding(.horizontal, UsageMenuCardLayout.horizontalPadding).padding(.vertical, 12)
+    }
+
+    /// Spend in smaller secondary text beside a token count; nothing when costs are off or nothing could be priced.
+    @ViewBuilder private func costText(_ tally: CostTally, requests: Int, size: CGFloat) -> some View {
+        if model.showCosts, let text = MetricFormat.cost(tally, requests: requests) {
+            Text(text)
+                .font(.system(size: size)).monospacedDigit().foregroundStyle(.secondary)
+                .help(MetricFormat.costHelp(tally, requests: requests))
+        }
     }
 
     private func legend(_ color: Color, _ text: String) -> some View {

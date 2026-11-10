@@ -21,11 +21,11 @@ let package = Package(
             name: "AgentSpeedCore",
             dependencies: ["CZstd"],
             path: "Vendor/AgentSpeed/Sources/AgentSpeedCore",
-            // Upstream features Tobken never starts: LAN sharing, profiles, characters, price/exchange-rate
-            // fetchers, money formatting, the demo driver and the self-updater. Kept on disk so the pin stays
-            // diffable against upstream; see Vendor/AgentSpeed/UPSTREAM.md.
+            // Upstream features Tobken never starts: LAN sharing, profiles, characters, exchange rates, money
+            // formatting, the demo driver and the self-updater. Kept on disk so the pin stays diffable against
+            // upstream; see Vendor/AgentSpeed/UPSTREAM.md. The price-table fetcher (Network/) is used.
             exclude: [
-                "Characters", "DemoDriver.swift", "Lan", "Money", "Network", "Profile",
+                "Characters", "DemoDriver.swift", "Lan", "Money", "Network/ExchangeRateSync.swift", "Profile",
                 "Reporting/ReportStreamSession.swift", "Reporting/URLSessionReportStream.swift",
                 "Updates/Release.swift", "Updates/ReleaseNotes.swift", "Updates/SemanticVersion.swift",
                 "Updates/UpdateSchedule.swift", "Updates/UpdateURLPolicy.swift", "Updates/ZipDirectory.swift",

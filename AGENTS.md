@@ -1,8 +1,9 @@
 # Tobken
 
 Native macOS menu bar app (Swift 6, macOS 14+) showing tokens today, current
-TPS and TTFT, read from local coding-tool logs. Nothing is uploaded; there is no
-proxy, login, telemetry or listener.
+TPS, TTFT and estimated spend, read from local coding-tool logs. Nothing is
+uploaded; there is no proxy, login, telemetry or listener. The only network
+request is the optional daily download of the public price table.
 
 ## Layout
 
@@ -45,6 +46,8 @@ say so instead of reporting it as passed. The version lives in `VERSION`.
 - Avg TPS is output ÷ summed request durations: includes TTFT and waits within
   a request, excludes idle time between requests.
 - Unknown (`nil`, shown `—`) and estimated readings stay distinct from zero.
+  Unpriced requests are never $0: costs show "≥" when some are missing and
+  nothing when none could be priced.
 - The status item always shows the global total; the harness filter changes
   only the open menu, and never the global graph history.
 

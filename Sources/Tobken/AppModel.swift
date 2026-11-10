@@ -19,6 +19,13 @@ final class AppModel: ObservableObject {
     /// The same readings per harness, kept only for harnesses with activity today.
     @Published var sourceHistories: [SourceKind: TPSHistory] = [:]
     let store = SpeedStore()
+    /// List prices: the bundled table, then any newer table downloaded by `checkPrices`.
+    let priceBook = PriceBook()
+    @Published var showCosts: Bool { didSet { UserDefaults.standard.set(showCosts, forKey: "showCosts") } }
+    @Published var updatesPrices: Bool { didSet { UserDefaults.standard.set(updatesPrices, forKey: "updatesPrices") } }
+    @Published private(set) var priceStatus = ""
+    private var checkingPrices = false
+    private let launchedAt = Date()
     private var monitor: LiveMonitor?
     private var listener: UUID?
     let isDemo: Bool
@@ -38,6 +45,11 @@ final class AppModel: ObservableObject {
         extraPaths = demo ? [:] : (UserDefaults.standard.dictionary(forKey: "extraPaths") as? [String: [String]] ?? [:])
         let hidden = demo ? [] : (UserDefaults.standard.stringArray(forKey: "hiddenSources") ?? [])
         hiddenSources = Set(hidden.compactMap(SourceKind.init(rawValue:)))
+        UserDefaults.standard.register(defaults: ["showCosts": true, "updatesPrices": true])
+        showCosts = demo || UserDefaults.standard.bool(forKey: "showCosts")
+        updatesPrices = !demo && UserDefaults.standard.bool(forKey: "updatesPrices")
+        if !demo, let table = Self.priceStore.loadTable() { _ = priceBook.add(table) }
+        priceStatus = describePrices(checked: demo ? nil : Self.priceStore.loadState())
         if demo {
             snapshot = Demo.snapshot()
             for point in snapshot.history {
@@ -61,9 +73,57 @@ final class AppModel: ObservableObject {
         listener = store.addLiveListener { [weak self] snapshot in
             self?.receive(snapshot)
         }
-        let monitor = LiveMonitor(store: store, configuration: configuration)
+        let monitor = LiveMonitor(store: store, configuration: configuration, pricing: priceBook)
         self.monitor = monitor
         monitor.start()
+        // The upstream schedule waits a minute after launch; check once then, and again whenever the menu opens.
+        DispatchQueue.main.asyncAfter(deadline: .now() + PriceTableSync.launchDelay + 1) { [weak self] in
+            self?.checkPrices()
+        }
+    }
+
+    // MARK: Prices
+
+    static var appDataDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Tobken", isDirectory: true)
+    }
+
+    static var priceStore: PriceTableStore { PriceTableStore(appDataDirectory: appDataDirectory) }
+
+    /// Downloads a newer public price table when one is due (daily), or now when `force` is set. Sends a plain GET
+    /// with a generic user agent; nothing about the user or their usage leaves the machine.
+    func checkPrices(force: Bool = false) {
+        guard !isDemo, updatesPrices || force, !checkingPrices else { return }
+        let store = Self.priceStore
+        let due = PriceTableSync.nextAttempt(launchedAt: launchedAt, state: store.loadState(), now: Date())
+        guard force || Date() >= due else { return }
+        checkingPrices = true
+        priceStatus = "Checking for price updates…"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+        let sync = PriceTableSync(store: store, transport: URLSessionTransport(), userAgent: "Tobken/\(version)")
+        let current = priceBook.currentVersion
+        Task { [weak self] in
+            let result = await sync.run(currentVersion: current)
+            guard let self else { return }
+            if let table = result.table { _ = self.priceBook.add(table) }
+            self.checkingPrices = false
+            self.priceStatus = self.describePrices(checked: result.state, outcome: result.outcome)
+        }
+    }
+
+    private func describePrices(checked state: PriceSyncState?, outcome: PriceSyncOutcome? = nil) -> String {
+        let table = priceBook.current
+        var text = "Price table \(table.version), updated \(table.updated)"
+        if case .failed(let reason) = outcome { return text + " · last check failed (\(reason))" }
+        if case .newerSchema = outcome { return text + " · a newer table needs a Tobken update" }
+        if let success = state?.lastSuccessMs {
+            let date = Date(timeIntervalSince1970: Double(success) / 1_000)
+            text += " · checked " + date.formatted(.relative(presentation: .named))
+        } else if !updatesPrices {
+            text += " · bundled with the app"
+        }
+        return text
     }
 
     func receive(_ snapshot: SpeedSnapshot) {
@@ -85,6 +145,7 @@ final class AppModel: ObservableObject {
     func prepareMenu() {
         selectedSource = nil
         recordCurrentReading()
+        checkPrices()
     }
 
     /// Records the current reading at the wall clock. The monitor stops publishing once output is quiet, so the

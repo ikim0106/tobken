@@ -6,6 +6,7 @@
   "filterGraphsSelectedHarness" : true,
   "filterPreservedGlobalChart" : true,
   "filterPreservedStatus" : true,
+  "liveDataKeepsPopoverSteady" : true,
   "menuReopened" : true,
   "popoverOpened" : true,
   "reopenResetsFilter" : true,
