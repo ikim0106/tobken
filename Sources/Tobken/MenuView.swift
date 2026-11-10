@@ -138,7 +138,7 @@ struct MenuView: View {
             }
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Avg TPS").foregroundStyle(.secondary)
-                Text(MetricFormat.rate(dashboard.summary.averageTPS)).monospacedDigit().fontWeight(.medium)
+                Text(MetricFormat.rate(dashboard.averageTPS)).monospacedDigit().fontWeight(.medium)
             }.help("Today's output tokens divided by summed request durations. Includes TTFT and pauses within a request. Excludes idle time between requests; concurrent requests are averaged by duration.")
         }
         .padding(.top, 1)

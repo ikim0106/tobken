@@ -2,18 +2,34 @@ import AgentSpeedCore
 import Foundation
 
 public enum MetricFormat {
+    /// Compact token count. Decimals are chosen after rounding, so values never read "1000K" or "100.0K".
     public static func tokens(_ value: Int) -> String {
         let magnitude = abs(Double(value))
-        let units: [(Double, String)] = [(1_000_000_000, "B"), (1_000_000, "M"), (1_000, "K")]
-        for (scale, suffix) in units where magnitude >= scale {
-            return String(format: magnitude / scale >= 100 ? "%.0f%@" : "%.1f%@", Double(value) / scale, suffix)
+        guard magnitude >= 1_000 else { return String(value) }
+        let units: [(scale: Double, suffix: String)] = [(1_000, "K"), (1_000_000, "M"), (1_000_000_000, "B")]
+        var index = units.lastIndex { magnitude >= $0.scale } ?? 0
+        let sign = value < 0 ? "-" : ""
+        while true {
+            let scaled = magnitude / units[index].scale
+            let tenths = (scaled * 10).rounded() / 10
+            guard tenths >= 100 else { return sign + String(format: "%.1f", tenths) + units[index].suffix }
+            let whole = scaled.rounded()
+            if whole >= 1_000, index + 1 < units.count { index += 1; continue }
+            return sign + String(format: "%.0f", whole) + units[index].suffix
         }
-        return String(value)
     }
 
+    /// One decimal below 100, none from 100 (decided after rounding, so 99.96 reads "100").
     public static func rate(_ value: Double?) -> String {
         guard let value, value.isFinite else { return "—" }
-        return String(format: value >= 100 || value == 0 ? "%.0f" : "%.1f", value)
+        let tenths = (value * 10).rounded() / 10
+        return tenths >= 100 || value == 0 ? String(format: "%.0f", value) : String(format: "%.1f", tenths)
+    }
+
+    /// Whole-number rate for compact places such as the menu bar, where changing decimals cause jitter.
+    public static func wholeRate(_ value: Double?) -> String {
+        guard let value, value.isFinite else { return "—" }
+        return String(format: "%.0f", value.rounded())
     }
 
     public static func latency(_ milliseconds: Double?) -> String {
@@ -59,10 +75,20 @@ public struct Dashboard {
         snapshot.activities.filter { selectedSource == nil || $0.key.source == selectedSource }
     }
 
-    public var summary: ActivityMetrics {
+    /// Aggregate of the selected activities. Its `key` is a placeholder; read only the metrics.
+    var summary: ActivityMetrics {
         selectedActivities.reduce(into: ActivityMetrics(key: ActivityKey(source: selectedSource ?? .codex, model: nil))) {
             $0.merge($1)
         }
+    }
+
+    /// Today's output divided by summed timed request durations for the selection.
+    public var averageTPS: Double? { summary.averageTPS }
+
+    /// Returns `source` if it is still listed, otherwise nil ("All"), so a vanished harness cannot strand the menu.
+    public func validSelection(_ source: SourceKind?) -> SourceKind? {
+        guard let source else { return nil }
+        return sources.contains { $0.kind == source } ? source : nil
     }
 
     public var totals: TokenTotals {

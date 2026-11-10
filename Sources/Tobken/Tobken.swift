@@ -37,6 +37,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
     private let popover = NSPopover()
     private var settingsWindow: NSWindow?
     private var smokeDirectory: String?
+    /// Moves the graph while the menu is open after output goes quiet; never runs with the menu closed.
+    private var chartTimer: Timer?
 
     init(demo: Bool, smokeDirectory: String? = nil) {
         model = AppModel(demo: demo)
@@ -67,6 +69,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
             guard let button = self?.statusItem?.button else { return }
             let text = " " + title
             if button.title != text { button.title = text }
+            self?.updateChartTimer()
         }
         model.start()
         if let smokeDirectory {
@@ -105,11 +108,36 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
+            updateChartTimer()
         }
     }
 
     func popoverDidClose(_ notification: Notification) {
         popover.contentViewController = nil
+        updateChartTimer()
+    }
+
+    /// The monitor stops publishing once output is quiet, so the open menu records the quiet seconds itself until
+    /// the graph is flat. With the menu closed, nothing ticks.
+    private func updateChartTimer() {
+        let needed = popover.isShown && !model.isDemo && model.tpsHistory.samples.contains { ($0.value ?? 0) > 0 }
+        if needed, chartTimer == nil {
+            let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.chartTick() }
+            }
+            timer.tolerance = 0.2
+            RunLoop.main.add(timer, forMode: .common)
+            chartTimer = timer
+        } else if !needed, let timer = chartTimer {
+            timer.invalidate()
+            chartTimer = nil
+        }
+    }
+
+    private func chartTick() {
+        // While output is active the monitor publishes each second; only fill in once its snapshot goes stale.
+        if Date().timeIntervalSince(model.snapshot.timestamp) > 1.5 { model.recordCurrentReading() }
+        updateChartTimer()
     }
 
     func windowWillClose(_ notification: Notification) {
