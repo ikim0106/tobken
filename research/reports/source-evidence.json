@@ -1,0 +1,338 @@
+{
+  "investigated_on": "2026-11-10",
+  "method": "Direct source inspection; offline synthetic checks for Agent Speed. No live account probes.",
+  "projects": [
+    {
+      "project": "codexbar",
+      "repository": "https://github.com/steipete/CodexBar",
+      "commit": "7447bc77c2497323d9c41e40164ce705533493c8",
+      "commit_date": "2026-11-07T19:48:58-08:00",
+      "tracked_worktree_changes": "",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe",
+          "lines": 21,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/LICENSE"
+        },
+        {
+          "path": "Package.swift",
+          "sha256": "6d357abf9afeb23b9e3ea196f37571a170b4f0715d2e61a25cafcea78fb49c75",
+          "lines": 258,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Package.swift"
+        },
+        {
+          "path": "Sources/CodexBar/Menu/MenuBarLayout.swift",
+          "sha256": "a1a33e0426a195ff6bf5fbb7866a08a03015b48bb3830fe5a383d548ca813588",
+          "lines": 1611,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Sources/CodexBar/Menu/MenuBarLayout.swift"
+        },
+        {
+          "path": "Sources/CodexBarCore/CostUsageTurnPerformance.swift",
+          "sha256": "cadb40a359200d79e52ff9f543e48cdd32bcb7969f96a4254811c77655ab4cc5",
+          "lines": 83,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Sources/CodexBarCore/CostUsageTurnPerformance.swift"
+        },
+        {
+          "path": "Sources/CodexBarCore/CostUsageTurnPerformanceDetails.swift",
+          "sha256": "02e06314babe0e8c39775d129c47f7333cdb571648c61e8f41cd8a09efcdfe94",
+          "lines": 78,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Sources/CodexBarCore/CostUsageTurnPerformanceDetails.swift"
+        },
+        {
+          "path": "Sources/CodexBarCore/Vendored/CostUsage/CostUsageScanner+TurnPerformance.swift",
+          "sha256": "43c9f17d5cec5f971edfa759f510ede473c903e5b2197699866d46eaf423bb71",
+          "lines": 142,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Sources/CodexBarCore/Vendored/CostUsage/CostUsageScanner%2BTurnPerformance.swift"
+        },
+        {
+          "path": "Sources/CodexBarCore/Providers/OpenAI/OpenAILiveUsage+Throughput.swift",
+          "sha256": "98404fb0c707027cd05802c89d277c8377a658832b29b15e4f2a2c2569833114",
+          "lines": 34,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/Sources/CodexBarCore/Providers/OpenAI/OpenAILiveUsage%2BThroughput.swift"
+        },
+        {
+          "path": "docs/spend-turn-performance-validation.md",
+          "sha256": "85a29ecba57645c6c334fb8aee0b5ffdf9871b9c39c167d13778476d6f367712",
+          "lines": 77,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/docs/spend-turn-performance-validation.md"
+        },
+        {
+          "path": "docs/pi.md",
+          "sha256": "f584f0287f60a970c1ef9ec08ba1968e20deb4cc7e4d7399a02c63c2a95ea161",
+          "lines": 56,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/docs/pi.md"
+        },
+        {
+          "path": "docs/opencode.md",
+          "sha256": "4fd0cb1323bd7c4dd490ef199c9e95bc78b8a5e7d7a6cb9f75632c1d49a242e0",
+          "lines": 164,
+          "source_url": "https://github.com/steipete/CodexBar/blob/7447bc77c2497323d9c41e40164ce705533493c8/docs/opencode.md"
+        }
+      ]
+    },
+    {
+      "project": "syrtis",
+      "repository": "https://github.com/Nanako0129/syrtis",
+      "commit": "fbb8494c45b9bde65592a2de7e9629630d790c43",
+      "commit_date": "2026-11-08T12:22:29+08:00",
+      "tracked_worktree_changes": "",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "af0d43a123d6f30561d324f07948ece7af214951939b67317f9e33ed218b9882",
+          "lines": 23,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/LICENSE"
+        },
+        {
+          "path": "Package.swift",
+          "sha256": "dcc282c02b7a32fe34a98fdedade059097f474812a5f612985cead1ea67627b1",
+          "lines": 86,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Package.swift"
+        },
+        {
+          "path": "Cargo.toml",
+          "sha256": "fdbd1368a2868e05a09e6104d7c3eff35e56a1ac38678a7e956330d15d7cad5b",
+          "lines": 29,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Cargo.toml"
+        },
+        {
+          "path": "vendor/README.md",
+          "sha256": "b14dc930b42a55653c3b2b0cadbea79cdc9faeeeea172aaa1149a8fd083596c7",
+          "lines": 56,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/vendor/README.md"
+        },
+        {
+          "path": "Sources/Syrtis/TrayMode.swift",
+          "sha256": "9e11b80da6b14baf36aea539a4dfcbbd93f185f9b5d70f3fea400a236c22a60d",
+          "lines": 73,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/Syrtis/TrayMode.swift"
+        },
+        {
+          "path": "Sources/Syrtis/TrayAnimator.swift",
+          "sha256": "54497888bdb61aead53368e8e9057511df3f64ab2d825117f148aef2fbc07648",
+          "lines": 741,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/Syrtis/TrayAnimator.swift"
+        },
+        {
+          "path": "Sources/Syrtis/LiveRate.swift",
+          "sha256": "808528330adbaf964fd7af3f14645a2d229df769f2c4ccc1eac90d68fe984189",
+          "lines": 24,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/Syrtis/LiveRate.swift"
+        },
+        {
+          "path": "Sources/TokenBarCore/ClientRegistry.swift",
+          "sha256": "a1d37df8b69a3e1e066f7c0a6154ed28520e35a2cf06e46a9acae4f8333188a9",
+          "lines": 561,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/TokenBarCore/ClientRegistry.swift"
+        },
+        {
+          "path": "Sources/TokenBarCore/ModelReport.swift",
+          "sha256": "f85f8bbced89c3ab39a02440ad0fc4913833a94af42fa21d96a41c3a8e305165",
+          "lines": 228,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/TokenBarCore/ModelReport.swift"
+        },
+        {
+          "path": "Sources/Syrtis/Views/ModelsView.swift",
+          "sha256": "54ebf2f861e3d12e38632d7c7cf04e56ba174c9464cc1688006111142326359f",
+          "lines": 194,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/Sources/Syrtis/Views/ModelsView.swift"
+        },
+        {
+          "path": "crates/tb_core_ffi/src/usage_tail.rs",
+          "sha256": "4b9d5d451c9d1ab3d5f9b1094c795b221ae83975ba08891eba5d57daa34a17e2",
+          "lines": 347,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/crates/tb_core_ffi/src/usage_tail.rs"
+        },
+        {
+          "path": "crates/tb_core_ffi/src/model_report.rs",
+          "sha256": "d6eb972781d582f8421be37e3f2ddf04c487d153715a991cf5892656e165956f",
+          "lines": 814,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/crates/tb_core_ffi/src/model_report.rs"
+        },
+        {
+          "path": "crates/tb_core_ffi/src/lib.rs",
+          "sha256": "b4558cc955e22e4f9eb6287b90ea951ba2c96fa5064a2b6bf52445417dd194d2",
+          "lines": 3795,
+          "source_url": "https://github.com/Nanako0129/syrtis/blob/fbb8494c45b9bde65592a2de7e9629630d790c43/crates/tb_core_ffi/src/lib.rs"
+        }
+      ]
+    },
+    {
+      "project": "syrtis/vendor/tokscale-core",
+      "repository": "https://github.com/Nanako0129/tokscale-core",
+      "commit": "e156d67caa9708458fd2030f379d3c2a77ff05bf",
+      "commit_date": "2026-11-08T12:00:31+08:00",
+      "tracked_worktree_changes": "",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "24a794f325f7625b5f124945dedb6dcec8188f88e76bf4b99557b52d6cc77be9",
+          "lines": 21,
+          "source_url": "https://github.com/Nanako0129/tokscale-core/blob/e156d67caa9708458fd2030f379d3c2a77ff05bf/LICENSE"
+        },
+        {
+          "path": "src/lib.rs",
+          "sha256": "b6d9772ce3cb511df8f506b6ba88d5829968bc15bfe8f8282a80190bc03e0549",
+          "lines": 26391,
+          "source_url": "https://github.com/Nanako0129/tokscale-core/blob/e156d67caa9708458fd2030f379d3c2a77ff05bf/src/lib.rs"
+        },
+        {
+          "path": "src/sessions/codex.rs",
+          "sha256": "93b1a3e54118de6026432b94e86f1b3d47bfd4363077a588a8aadde9253d7d03",
+          "lines": 3608,
+          "source_url": "https://github.com/Nanako0129/tokscale-core/blob/e156d67caa9708458fd2030f379d3c2a77ff05bf/src/sessions/codex.rs"
+        },
+        {
+          "path": "src/sessions/claudecode.rs",
+          "sha256": "1e0a599364cf56a0f98e0f9dd3a1a3e3fba441d6f65d42e215c538ec5a9a00ee",
+          "lines": 5101,
+          "source_url": "https://github.com/Nanako0129/tokscale-core/blob/e156d67caa9708458fd2030f379d3c2a77ff05bf/src/sessions/claudecode.rs"
+        }
+      ]
+    },
+    {
+      "project": "tokscale",
+      "repository": "https://github.com/junhoyeo/tokscale",
+      "commit": "82613d2f5e96654ce3729892afbb0025979f1c75",
+      "commit_date": "2026-11-06T11:51:01+09:00",
+      "tracked_worktree_changes": "",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "24a794f325f7625b5f124945dedb6dcec8188f88e76bf4b99557b52d6cc77be9",
+          "lines": 21,
+          "source_url": "https://github.com/junhoyeo/tokscale/blob/82613d2f5e96654ce3729892afbb0025979f1c75/LICENSE"
+        },
+        {
+          "path": "Cargo.toml",
+          "sha256": "5fcd2ecc52890eaea837d394064faa5838ae0e0d905f586cefcb51c66351f1b4",
+          "lines": 150,
+          "source_url": "https://github.com/junhoyeo/tokscale/blob/82613d2f5e96654ce3729892afbb0025979f1c75/Cargo.toml"
+        },
+        {
+          "path": "crates/tokscale-core/src/lib.rs",
+          "sha256": "728bd9d19184e1291f5da7dbab79db2da676866b7216eaae936fd43b71fc38fd",
+          "lines": 28709,
+          "source_url": "https://github.com/junhoyeo/tokscale/blob/82613d2f5e96654ce3729892afbb0025979f1c75/crates/tokscale-core/src/lib.rs"
+        },
+        {
+          "path": "crates/tokscale-core/src/sessions/codex.rs",
+          "sha256": "8a796208dfbb92da6e600f45fd58c00d824ae07f5ce066e5ff93b58902dc8390",
+          "lines": 6816,
+          "source_url": "https://github.com/junhoyeo/tokscale/blob/82613d2f5e96654ce3729892afbb0025979f1c75/crates/tokscale-core/src/sessions/codex.rs"
+        },
+        {
+          "path": "crates/tokscale-core/src/sessions/claudecode.rs",
+          "sha256": "343ff95ced60a21ba38f30f30613b8bc7d5f8a535c1cc6136eb4a809caf7062c",
+          "lines": 5141,
+          "source_url": "https://github.com/junhoyeo/tokscale/blob/82613d2f5e96654ce3729892afbb0025979f1c75/crates/tokscale-core/src/sessions/claudecode.rs"
+        }
+      ]
+    },
+    {
+      "project": "agent-speed",
+      "repository": "https://github.com/zoefix/agent-speed",
+      "commit": "9d50d8c28bdee0be2be4e77560903795827295bc",
+      "commit_date": "2026-11-09T12:41:28-08:00",
+      "tracked_worktree_changes": "",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "83de342c5fd532d3b25359a82cd62c6e18beb52c108353e54923c68dbe9592dd",
+          "lines": 21,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/LICENSE"
+        },
+        {
+          "path": "macos/Package.swift",
+          "sha256": "baf5fb3038f6a450432354a886b702ee74d6cd5694815bd8fdabfd32eda4db95",
+          "lines": 77,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Package.swift"
+        },
+        {
+          "path": "spec/METRICS.md",
+          "sha256": "18e1b792362bedc24a7b23b35c51ebaf21a038d992a984b312e9da135e337eb8",
+          "lines": 3995,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/spec/METRICS.md"
+        },
+        {
+          "path": "macos/Sources/AgentSpeedCore/Engine/ResponseTiming.swift",
+          "sha256": "6b32d858444dfe6e0d4fb21fb1a55b2bd97a8f75a21c1a554edac125a1af3a71",
+          "lines": 60,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeedCore/Engine/ResponseTiming.swift"
+        },
+        {
+          "path": "macos/Sources/AgentSpeedCore/Engine/LiveRate.swift",
+          "sha256": "8a137860a98c2e5f98558f89b7cf04f12451677e4a9c5c03bde0afb8d29b6723",
+          "lines": 305,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeedCore/Engine/LiveRate.swift"
+        },
+        {
+          "path": "macos/Sources/AgentSpeedCore/Engine/SpeedEngine.swift",
+          "sha256": "199c5c0a016f8916c6ecedab9c928aee4ce551b34fa8bbba4d1d458a5efc4f01",
+          "lines": 559,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeedCore/Engine/SpeedEngine.swift"
+        },
+        {
+          "path": "macos/Sources/AgentSpeedCore/Parsing/CodexParser.swift",
+          "sha256": "e68a3c8a95f92dd6d0cfd6a00c053e15d66573a876cd9828e06321ee03c78356",
+          "lines": 189,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeedCore/Parsing/CodexParser.swift"
+        },
+        {
+          "path": "macos/Sources/AgentSpeedCore/Parsing/ClaudeParser.swift",
+          "sha256": "42a317beed5a45acb555bc0983ebdb2fbb1796f4284f1b6ed56fe833c50238e7",
+          "lines": 194,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeedCore/Parsing/ClaudeParser.swift"
+        },
+        {
+          "path": "macos/Sources/AgentSpeed/MenuBar/StatusItemSecondary.swift",
+          "sha256": "e57262cf29aac6eda8d2a6f2613b620f2000dce7569db02b0bce1f751f23cd7c",
+          "lines": 84,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Sources/AgentSpeed/MenuBar/StatusItemSecondary.swift"
+        },
+        {
+          "path": "macos/Tests/AgentSpeedCoreTests/EngineCaseTests.swift",
+          "sha256": "18e4f96e8d44601190a6ddc5212203b9191be92135d8bb7fb3894a7d0d6a2865",
+          "lines": 184,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Tests/AgentSpeedCoreTests/EngineCaseTests.swift"
+        },
+        {
+          "path": "macos/Tests/AgentSpeedCoreTests/EngineBehaviorTests.swift",
+          "sha256": "dc110f62a6db557fa58292bcdc158d00efec212567d1778ea4c7e1d30ca5d6c7",
+          "lines": 171,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Tests/AgentSpeedCoreTests/EngineBehaviorTests.swift"
+        },
+        {
+          "path": "macos/Tests/AgentSpeedCoreTests/ParserFixtureTests.swift",
+          "sha256": "43e2beff79c01312b3944c5b19c359439a2a848c6d3f8d7ea953a58c3fac6f9d",
+          "lines": 165,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/macos/Tests/AgentSpeedCoreTests/ParserFixtureTests.swift"
+        },
+        {
+          "path": "spec/tools/reference.py",
+          "sha256": "752c688ac8db6a7f8dce4498812b1093ba8ad72bfa400f23bb4e151563811d90",
+          "lines": 4872,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/spec/tools/reference.py"
+        },
+        {
+          "path": "spec/fixtures/engine-cases.json",
+          "sha256": "e821046ac501699c0a12a0e4e929d367e4209a0a1634ec57c27949b220444549",
+          "lines": 1426,
+          "source_url": "https://github.com/zoefix/agent-speed/blob/9d50d8c28bdee0be2be4e77560903795827295bc/spec/fixtures/engine-cases.json"
+        }
+      ]
+    }
+  ],
+  "documentation_only_candidates": [
+    "https://ccusage.com/guide/daily-reports",
+    "https://github.com/Xombie2000/lm-speed-monitor"
+  ],
+  "official_documentation": [
+    "https://learn.chatgpt.com/docs/config-file/config-advanced",
+    "https://code.claude.com/docs/en/monitoring-usage",
+    "https://opencode.ai/docs/plugins/",
+    "https://opencode.ai/v1/docs/server/",
+    "https://docs.litellm.ai/docs/observability/opentelemetry_v2"
+  ]
+}

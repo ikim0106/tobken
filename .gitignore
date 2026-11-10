@@ -1,0 +1,6 @@
+.build/
+.swiftpm/
+dist/
+.DS_Store
+research/upstream/
+research/reports/agent-speed-swift-tests.log
