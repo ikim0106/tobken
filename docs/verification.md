@@ -139,3 +139,23 @@ running side by side (five ten-second windows, host load average 10–16): CPU
 median 0.015% before and 0.016% after, physical footprint 41.6 and 42.2 MiB.
 No change is claimed. Excluding unused upstream features reduced the arm64
 slice of the binary from 11.77 MB to 9.86 MB.
+
+## Placed current TPS and graph redesign
+
+Current TPS now places each logged output delta across the interval it was
+generated and averages the last ten seconds, replacing the five-second count
+of log arrivals that turned completion-only logs into bursts of response size
+÷ 5. `Scripts/test.sh`: **30 tests passed**. New engine tests cover a
+completed response read as its generation rate and back-filled into the
+graph, a response logged long after it ended (history, no current burst),
+streaming updates placed since the previous update, corrections, the startup
+baseline, clamped future timestamps, and that active requests and historical
+speeds never produce output. The packaged verifier now observes
+**0 → 40 → 0 TPS** (400 tokens over a 2 s request inside the 10 s window) and
+checks the graph's latest reading equals current TPS. `--ui-smoke-test`
+passed; light, dark and filtered previews were inspected.
+
+Quiet cost against `main`, both release builds side by side (load average
+4.5–7): CPU median 0.004% vs 0.009% with overlapping ranges (0.003–0.018% and
+0.005–0.018%), footprint 69.3 vs 62.4 MiB. Neither difference is claimed; the
+series is computed only when a snapshot is published.

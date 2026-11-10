@@ -185,7 +185,7 @@ struct SpeedEngine: Sendable {
             activities[key, default: ActivityMetrics(key: key)].liveTPS = rate
             activities[key]?.estimatedTPS = window.activityEstimatedTPS[key] ?? 0
         }
-        return EngineOutput(
+        var output = EngineOutput(
             activities: Array(activities.values),
             nowMs: nowMs,
             live: live,
@@ -218,6 +218,8 @@ struct SpeedEngine: Sendable {
             events: events,
             report: report
         )
+        output.observedSeries = window.observedSeries
+        return output
     }
 
     /// The window's cells with the listed agents' scores merged in, and today's part from the ledger.

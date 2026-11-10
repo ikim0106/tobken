@@ -147,6 +147,8 @@ struct EngineOutput: Sendable {
     /// The local midnight the output's "today" starts at.
     var todayStartMs: Int64
     var lastResponse: ResponseSummary?
+    /// Tobken: the observed window's last-minute readings (`ObservedOutputWindow`).
+    var observedSeries: ObservedSeries?
     var events: [SpeedEvent]
     /// Live reporting's view of this instant (METRICS 11.2, 11.4).
     var report: ReportLiveFacts = .empty

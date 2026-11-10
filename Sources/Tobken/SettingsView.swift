@@ -22,7 +22,7 @@ struct SettingsView: View {
                         Text(launchError).font(.caption).foregroundStyle(.red)
                     }
                 }
-                Text("Current TPS is new output logged in the last 5 seconds ÷ 5. Avg TPS includes TTFT. Today resets at local midnight.")
+                Text("Current TPS is output generated in the last 10 seconds ÷ 10, counted once its usage is logged. Avg TPS includes TTFT. Today resets at local midnight.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {

@@ -12,7 +12,7 @@ struct TPSHistoryTests {
         #expect(history.samples.count == 61)
         #expect(history.samples.allSatisfy { $0.value == 0 })
         #expect(history.samples.first?.time == Date(timeIntervalSince1970: 540))
-        #expect(history.ceiling == 100)
+        #expect(history.ceiling == 5, "a quiet minute keeps a small floor scale")
         history.record(at: Date(timeIntervalSince1970: 601), value: 20)
         #expect(history.samples.last?.value == 20)
     }
@@ -59,13 +59,26 @@ struct TPSHistoryTests {
         #expect(history.samples.map(\.value) == [nil, 80, 75])
     }
 
-    @Test func scaleStaysFixedWhenAPeakLeavesTheWindow() {
+    @Test func scaleFollowsTheMinutesPeak() {
         var history = TPSHistory()
         history.record(at: Date(timeIntervalSince1970: 0), value: 320)
-        #expect(history.ceiling == 500)
+        #expect(history.peak == 320)
+        #expect(history.ceiling == 400)
         history.record(at: Date(timeIntervalSince1970: 61), value: 80)
-        #expect(history.ceiling == 500)
-        for second in 62...122 { history.record(at: Date(timeIntervalSince1970: Double(second)), value: 0) }
+        #expect(history.peak == 80, "the old peak left the minute")
         #expect(history.ceiling == 100)
+        #expect(TPSHistory.ceiling(peak: 0.5) == 5)
+    }
+
+    @Test func collectorSeriesReplacesReadingsAndIdleZerosExtendIt() {
+        var history = TPSHistory()
+        history.record(at: Date(timeIntervalSince1970: 90), value: 999)
+        history.replace(values: [nil, 0, 50, .nan, 0], endingAt: Date(timeIntervalSince1970: 100))
+        #expect(history.samples.map(\.value) == [nil, 0, 50, nil, 0])
+        #expect(history.samples.first?.time == Date(timeIntervalSince1970: 96))
+        #expect(history.peak == 50, "a revised series replaces earlier readings")
+        history.record(at: Date(timeIntervalSince1970: 104), value: 0)
+        #expect(history.samples.count == 9)
+        #expect(history.samples.suffix(4).allSatisfy { $0.value == 0 })
     }
 }

@@ -103,6 +103,12 @@ public struct Dashboard {
         snapshot.state == .running ? liveTPS : nil
     }
 
+    /// Requests in flight for the selection. Most harnesses log usage only when a response completes, so their
+    /// output reaches current TPS (placed back across its generation time) only then.
+    public var generatingCount: Int {
+        snapshot.agents.filter { $0.phase == .generating && (selectedSource == nil || $0.source == selectedSource) }.count
+    }
+
     public var sources: [SourceStatus] {
         snapshot.sources.filter { $0.available || $0.today.total > 0 || $0.live.output > 0 }
     }

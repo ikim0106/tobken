@@ -34,7 +34,7 @@ public enum Verification {
         monitor.start()
         defer { monitor.stop() }
         @MainActor func wait(_ predicate: () -> Bool) async throws {
-            let deadline = Date().addingTimeInterval(15)
+            let deadline = Date().addingTimeInterval(20)
             while !predicate(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
             guard predicate() else { throw Failure.assertion("Timed out waiting for transcript updates") }
         }
@@ -51,7 +51,13 @@ public enum Verification {
         try await wait { store.snapshot.today.output == 600 }
         let snapshot = store.snapshot
         let dashboard = Dashboard(snapshot: snapshot)
-        guard snapshot.live.output == 80 else { throw Failure.assertion("Expected 400 new output tokens / 5 seconds = 80 TPS") }
+        // 400 tokens generated over the 2 s request, all inside the 10 s window: 400 / 10 = 40 TPS.
+        guard snapshot.live.output == 40 else {
+            throw Failure.assertion("Expected 400 output tokens placed in the 10-second window = 40 TPS, got \(snapshot.live.output)")
+        }
+        guard snapshot.observedSeries?.total.last == snapshot.live.output else {
+            throw Failure.assertion("The graph's latest reading differs from current TPS")
+        }
         let filtered = Dashboard(snapshot: snapshot, selectedSource: .claudeCode)
         guard dashboard.totals.total == 4_600, dashboard.models.reduce(0, { $0 + $1.metrics.totals.total }) == 4_600,
               filtered.totals.total == 0, filtered.statusTitle == dashboard.statusTitle else {
@@ -68,6 +74,6 @@ public enum Verification {
         defer { restarted.stop() }
         try await wait { restartedStore.snapshot.state == .running && restartedStore.snapshot.today.total == 4_600 }
         guard restartedStore.snapshot.live.output == 0 else { throw Failure.assertion("Restart invented live TPS") }
-        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved; observed TPS 0 → 80 → 0."
+        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved; observed TPS 0 → 40 → 0."
     }
 }

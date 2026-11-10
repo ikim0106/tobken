@@ -43,21 +43,27 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   in input/output; they are not added twice. Requests count when their usage is
   logged, so an unfinished request may appear later. Missing model names still
   contribute to totals.
-- **Current TPS:** new output tokens observed in logs in the last five seconds,
-  divided by five, summed across all tools and models. Quiet seconds count as
-  zero; after five seconds without new output the reading is `0`, even if a
-  request is still marked active. Input never increases TPS. Startup history,
-  duplicate records and finalizing an unchanged usage count do not add output.
-  Tools that report usage only at completion produce bursts; this measures
-  observed log throughput, not individual token emission or predicted speed.
-  A dash means the monitor is starting or has no supported sources. The menu
-  bar shows it as a whole number; harness rows label it "TPS now".
-  The graph records that same TPS reading over 60 seconds, with the latest
-  reading at the right-hand dot. It keeps past readings fixed and leaves gaps
-  for unavailable readings. The labeled scale stays fixed during activity,
-  grows for new peaks, and resets after a full idle minute. It fills as the
-  app observes activity; it does not reconstruct a history on startup. With a
-  harness selected, the graph shows that harness's own readings.
+- **Current TPS:** output generated in the last ten seconds, divided by ten,
+  summed across all tools and models. Output counts only once its usage is
+  logged, and it is placed across the time it was generated: from the
+  response's first output (or request start) to the time its usage was logged,
+  or since the previous update for tools that log progress. Most tools log
+  usage once, when a response finishes, so a 2,000-token response that took
+  40 s reads as 50 TPS over those 40 s, appearing when it completes, rather
+  than a burst of 400. While a response is still running and unlogged it is
+  not counted; the menu shows "N generating · counted when logged" instead of
+  predicting from earlier speeds. Quiet seconds count as zero. Input never
+  increases TPS. Startup history, duplicate records and finalizing an
+  unchanged usage count do not add output. A dash means the monitor is
+  starting or has no supported sources. The menu bar shows it as a whole
+  number; harness rows label it "TPS now".
+  The graph shows that reading at each second of the last minute, with the
+  latest at the right-hand dot. When a response completes, the seconds it took
+  fill in, so recent readings can rise after the fact. Its scale follows the
+  minute's peak (named in the caption) and eases when that changes; hover for
+  any second's reading. Gaps mean no reading, such as before the app started;
+  it does not reconstruct a history on startup. With a harness selected, the
+  graph shows that harness's own readings.
 - **Avg TPS** (summary and model rows): today's output divided by summed timed request
   durations, including TTFT. It is weighted by duration, not an average of the
   displayed per-request rates. This includes pauses within requests and excludes
@@ -76,7 +82,7 @@ transcripts are not uploaded.
 ## Resource use
 
 File notifications trigger incremental reads. Snapshots publish at most once a
-second during output activity and stop when the five-second window reaches
+second during output activity and stop when the ten-second window reaches
 zero. A ten-second discovery check catches missed events and new sources.
 Recent files have at most 32 transcript watchers plus OpenCode database/WAL
 watchers. Unchanged menu-bar text is not redrawn. The menu and Settings views

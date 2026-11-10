@@ -148,6 +148,7 @@ enum SnapshotBuilder {
             report: output.report
         )
         snapshot.activities = output.activities
+        snapshot.observedSeries = output.observedSeries
         if !context.remote.hosts.isEmpty {
             (snapshot.hosts, snapshot.hostSources) = hosts(output, context: context)
         }

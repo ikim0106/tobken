@@ -342,6 +342,8 @@ public struct SpeedSnapshot: Equatable, Sendable {
     /// The (host, source) cells with something to show, in `hosts` order and then source order; empty while no remote
     /// host is configured. Per source they add up to `sources`.
     public var hostSources: [HostSourceStatus] = []
+    /// Tobken: current-TPS readings over the last minute from the observed output window; nil when not observing.
+    public var observedSeries: ObservedSeries?
 
     public init(
         timestamp: Date,

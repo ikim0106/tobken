@@ -152,6 +152,8 @@ struct LiveWindow: Sendable {
     private(set) var intelligenceByModel: [LiveModelKey: IntelligenceSums] = [:]
     /// The live values per (host, source) cell; empty unless the window was asked for them.
     private(set) var byCell: [HostSource: EngineCell] = [:]
+    /// Tobken: the observed window's last-minute readings; nil for upstream's reconstructed window.
+    var observedSeries: ObservedSeries?
 
     init(total: Rate, activities: [ActivityKey: Double], sources: [SourceKind: Rate], agents: [String: Rate]) {
         self.total = total

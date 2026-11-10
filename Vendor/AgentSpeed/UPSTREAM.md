@@ -17,13 +17,20 @@ Local changes:
 - `LiveWindow` projects the same live output contributions by activity key.
 - `SpeedEngine`, `EngineOutput`, `SpeedSnapshot`, and `SnapshotBuilder` carry the
   new statistics to the UI without another transcript scan.
-- Tobken enables `ObservedOutputWindow` in `TranscriptSession`'s engine. Live
-  TPS counts positive output usage deltas observed during the trailing five
-  seconds, divided by five. Startup reads establish the baseline; duplicate
+- Tobken enables `ObservedOutputWindow` in `TranscriptSession`'s engine. Each
+  positive output usage delta is placed evenly across the interval it was
+  generated: from the previous update of that response, or for the first from
+  its `firstMs` or `startMs`, to its logged `endMs` (clamped to now and to 15
+  minutes). Live TPS is the output placed in the trailing ten seconds, divided
+  by ten. Unlike upstream's 6.3, nothing is estimated for unmeasured or
+  in-flight responses. Startup reads establish the baseline; duplicate
   records, unchanged finalizations and input do not count as new output.
   Corrections retract recent contributions and late model identification moves
-  attribution. This replaces upstream's reconstructed/predicted live rate for
-  Tobken; daily request TPS and TTFT retain upstream timing semantics.
+  attribution. Daily request TPS and TTFT retain upstream timing semantics.
+- New `ObservedSeries` carries that reading at each second of the last minute
+  (nil before monitoring began) through `LiveWindow`, `EngineOutput`,
+  `SnapshotBuilder` and `SpeedSnapshot.observedSeries`, in total and per
+  source, so the app's graph can fill in completed responses.
 - `MonitorCore` uses a coalesced one-second timer only while output remains in
   that window or throttled database reads are pending. `ActiveFileWatcher`
   uses bounded vnode subscriptions alongside FSEvents to notice open-writer

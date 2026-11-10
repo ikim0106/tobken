@@ -65,8 +65,12 @@ final class AppModel: ObservableObject {
     func receive(_ snapshot: SpeedSnapshot) {
         self.snapshot = snapshot
         if snapshot.state == .running {
-            tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
-            recordSources(at: snapshot.timestamp)
+            if let series = snapshot.observedSeries {
+                applySeries(series)
+            } else {
+                tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
+                recordSources(at: snapshot.timestamp)
+            }
         }
         let valid = dashboard.validSelection(selectedSource)
         if valid != selectedSource { selectedSource = valid }
@@ -86,6 +90,19 @@ final class AppModel: ObservableObject {
         let now = Date()
         tpsHistory.record(at: now, value: Dashboard(snapshot: snapshot).currentTPS)
         recordSources(at: now)
+    }
+
+    /// The collector's last minute replaces the graphs: a completed response fills in the seconds it took.
+    private func applySeries(_ series: ObservedSeries) {
+        let end = Date(timeIntervalSince1970: Double(series.endMs) / 1_000)
+        let step = Double(series.stepMs) / 1_000
+        tpsHistory.replace(values: series.total, endingAt: end, step: step)
+        let quiet = series.total.map { $0.map { _ in 0.0 } }
+        for source in snapshot.sources
+        where source.today.total > 0 || series.bySource[source.kind] != nil || sourceHistories[source.kind] != nil {
+            sourceHistories[source.kind, default: TPSHistory()]
+                .replace(values: series.bySource[source.kind] ?? quiet, endingAt: end, step: step)
+        }
     }
 
     private func recordSources(at time: Date) {

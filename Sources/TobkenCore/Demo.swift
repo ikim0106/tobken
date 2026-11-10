@@ -44,10 +44,12 @@ public enum Demo {
                                 sessionCount: 12, live: Rate(output: metrics.liveTPS), today: metrics.totals,
                                 activeAgents: metrics.liveTPS > 0 ? 1 : 0)
         }
+        // A minute of readings that ends at the current value, as the live graph would.
+        let current = all.liveTPS
         snapshot.history = (0..<60).map { index in
-            HistoryPoint(time: now.addingTimeInterval(Double(index - 59)),
-                         measured: Rate(output: max(0, 78 + 42 * sin(Double(index) * 0.27))),
-                         estimated: Rate(output: max(0, 30 + 12 * cos(Double(index) * 0.41))))
+            let wave = 0.78 + 0.16 * cos(Double(index - 59) * 0.21) + 0.06 * cos(Double(index - 59) * 0.57)
+            return HistoryPoint(time: now.addingTimeInterval(Double(index - 59)),
+                                measured: Rate(output: current * wave), estimated: .zero)
         }
         return snapshot
     }

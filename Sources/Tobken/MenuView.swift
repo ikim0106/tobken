@@ -160,27 +160,37 @@ struct MenuView: View {
     // MARK: Live
 
     private var live: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 5) {
-                    Circle().fill(dashboard.liveTPS > 0 ? MenuColors.live : Color.secondary.opacity(0.35)).frame(width: 5, height: 5)
-                    Text("Current TPS").foregroundStyle(.secondary)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(MetricFormat.rate(dashboard.currentTPS))
-                        .font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
-                    Text("TPS").foregroundStyle(.secondary)
-                }
-                Text("output, last 5 s").font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary)
-            }.help("New output tokens logged in the last 5 seconds, divided by 5. Quiet seconds count as zero. Tools that report usage only at completion produce bursts; this is observed log throughput, not inferred streaming speed.")
-            Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Circle().fill(dashboard.liveTPS > 0 ? MenuColors.live : Color.secondary.opacity(0.35)).frame(width: 5, height: 5)
+                        Text("Current TPS").foregroundStyle(.secondary)
+                    }
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(MetricFormat.rate(dashboard.currentTPS))
+                            .font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
+                        Text("TPS").foregroundStyle(.secondary)
+                    }
+                    Text(liveCaption).font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary)
+                }.help("Output generated in the last 10 seconds, divided by 10. Output counts once its usage is logged and is placed across the time it was generated. Most tools log usage when a response finishes, so a running response shows up then; nothing is predicted from earlier speeds.")
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Avg TPS").foregroundStyle(.secondary)
+                    Text(MetricFormat.rate(dashboard.averageTPS))
+                        .font(.system(size: 17, weight: .medium, design: .rounded)).monospacedDigit()
+                    Text("today, per request").font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary)
+                }.help("Today's output tokens divided by summed request durations. Includes TTFT and pauses within a request. Excludes idle time between requests; concurrent requests are averaged by duration.")
+            }
             TPSChart(history: model.selectedHistory, color: MenuColors.live)
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("Avg TPS").foregroundStyle(.secondary)
-                Text(MetricFormat.rate(dashboard.averageTPS)).monospacedDigit().fontWeight(.medium)
-            }.help("Today's output tokens divided by summed request durations. Includes TTFT and pauses within a request. Excludes idle time between requests; concurrent requests are averaged by duration.")
         }
         .padding(.top, 1)
+    }
+
+    private var liveCaption: String {
+        let generating = dashboard.generatingCount
+        guard generating > 0 else { return "output, last 10 s" }
+        return "\(generating) generating · counted when logged"
     }
 
     // MARK: Models

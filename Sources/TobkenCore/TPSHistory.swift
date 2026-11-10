@@ -1,6 +1,10 @@
 import Foundation
 
-/// Readings of the displayed live rate, kept as observed rather than reconstructed later.
+/// Current-TPS readings over the last minute, for the graph.
+///
+/// While the monitor runs, each snapshot's `ObservedSeries` replaces the readings: output is placed across the time it
+/// was generated, so a completed response fills in the seconds it took. When the monitor goes quiet it stops
+/// publishing; `record` then extends the readings with the known zeros, without a timer while the menu is closed.
 public struct TPSHistory: Equatable, Sendable {
     public struct Sample: Equatable, Sendable {
         public let time: Date
@@ -9,10 +13,26 @@ public struct TPSHistory: Equatable, Sendable {
 
     public static let duration: TimeInterval = 60
     public private(set) var samples: [Sample] = []
-    public private(set) var ceiling: Double = 100
 
     public init() {}
 
+    /// The highest reading in range, or nil when nothing is known.
+    public var peak: Double? { samples.compactMap(\.value).max() }
+
+    /// The top of the graph: the peak sits at 80% of the height, and quiet trickles do not fill it.
+    public var ceiling: Double { Self.ceiling(peak: peak ?? 0) }
+
+    public static func ceiling(peak: Double) -> Double { max(peak * 1.25, 5) }
+
+    /// Replaces the readings with a series from the collector (oldest first, one per `step`, ending at `end`).
+    public mutating func replace(values: [Double?], endingAt end: Date, step: TimeInterval = 1) {
+        samples = values.enumerated().map { index, value in
+            Sample(time: end.addingTimeInterval(-Double(values.count - 1 - index) * step), value: Self.clean(value))
+        }
+        trim(to: end)
+    }
+
+    /// Adds one reading. Past seconds stay as they are; a reading in the same second replaces the last one.
     public mutating func record(at time: Date, value: Double?) {
         if let last = samples.last, time < last.time { return }
         // The monitor sleeps after publishing zero. Fill that known quiet interval when it wakes,
@@ -24,22 +44,22 @@ public struct TPSHistory: Equatable, Sendable {
             for second in stride(from: firstSecond, to: endSecond, by: 1) {
                 samples.append(Sample(time: Date(timeIntervalSince1970: second), value: 0))
             }
-            if time.timeIntervalSince(last.time) >= Self.duration { ceiling = 100 }
         }
-        let value = value.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
-        let sample = Sample(time: time, value: value)
+        let sample = Sample(time: time, value: Self.clean(value))
         if let last = samples.last,
            floor(last.time.timeIntervalSince1970) == floor(time.timeIntervalSince1970) {
             samples[samples.count - 1] = sample
         } else {
             samples.append(sample)
         }
-        samples.removeAll { $0.time < time.addingTimeInterval(-Self.duration) }
-        if let value, value > ceiling {
-            let magnitude = pow(10, floor(log10(value)))
-            ceiling = ([1.0, 2, 5, 10].first { $0 * magnitude >= value } ?? 10) * magnitude
-        }
-        // Keep a stable scale through activity; allow a fresh scale after a full idle minute.
-        if samples.count >= 60, samples.allSatisfy({ $0.value == 0 }) { ceiling = 100 }
+        trim(to: time)
+    }
+
+    private mutating func trim(to end: Date) {
+        samples.removeAll { $0.time < end.addingTimeInterval(-Self.duration) }
+    }
+
+    private static func clean(_ value: Double?) -> Double? {
+        value.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
     }
 }

@@ -36,9 +36,12 @@ say so instead of reporting it as passed. The version lives in `VERSION`.
 ## Metric invariants
 
 - TPS counts output only; input and cache never increase it.
-- Current TPS is newly observed output usage in the last five seconds ÷ 5,
-  including quiet seconds. Never substitute historical request speeds for new
-  output. Completion-only logs produce bursts; say so in tooltips.
+- Current TPS is output generated in the last ten seconds ÷ 10, including
+  quiet seconds. Output counts only once its usage is logged, placed across the
+  interval it was generated (`ObservedOutputWindow`). Never substitute
+  historical request speeds for unlogged output; in-flight requests are shown
+  as "generating", not estimated. The graph is the same reading per second and
+  may revise recent seconds when a response completes.
 - Avg TPS is output ÷ summed request durations: includes TTFT and waits within
   a request, excludes idle time between requests.
 - Unknown (`nil`, shown `—`) and estimated readings stay distinct from zero.
