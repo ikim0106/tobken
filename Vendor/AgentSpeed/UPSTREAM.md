@@ -23,9 +23,10 @@ Local changes:
   positive output usage delta is placed evenly across the interval it was
   generated: from the previous update of that response, or for the first from
   its `firstMs` or `startMs`, to its logged `endMs` (clamped to now and to 15
-  minutes). Live TPS is the output placed in the trailing ten seconds, divided
-  by ten. Unlike upstream's 6.3, nothing is estimated for unmeasured or
-  in-flight responses. Startup reads establish the baseline; duplicate
+  minutes). Live TPS is the output placed in the trailing 30 seconds, divided
+  by 30 (lengthened from ten so the gaps between completion-logged responses
+  of a running task do not read as 0). Unlike upstream's 6.3, nothing is
+  estimated for unmeasured or in-flight responses. Startup reads establish the baseline; duplicate
   records, unchanged finalizations and input do not count as new output.
   Corrections retract recent contributions and late model identification moves
   attribution. Daily request TPS and TTFT retain upstream timing semantics.

@@ -43,7 +43,7 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   in input/output; they are not added twice. Requests count when their usage is
   logged, so an unfinished request may appear later. Missing model names still
   contribute to totals.
-- **Current TPS:** output generated in the last ten seconds, divided by ten,
+- **Current TPS:** output generated in the last 30 seconds, divided by 30,
   summed across all tools and models. Output counts only once its usage is
   logged, and it is placed across the time it was generated: from the
   response's first output (or request start) to the time its usage was logged,

@@ -159,3 +159,18 @@ Quiet cost against `main`, both release builds side by side (load average
 4.5–7): CPU median 0.004% vs 0.009% with overlapping ranges (0.003–0.018% and
 0.005–0.018%), footprint 69.3 vs 62.4 MiB. Neither difference is claimed; the
 series is computed only when a snapshot is published.
+
+## Thirty-second current TPS window
+
+Current TPS now averages the last 30 seconds instead of ten. In three days
+of local Claude Code transcripts (1,614 responses), the median gap between
+consecutive logged responses was 9.8 s (p75 19 s, p90 47 s), so 49% of gaps
+left a ten-second window empty and the reading flickered between 0 and a
+burst while a task was still running; 16% of gaps exceed 30 s.
+`Scripts/test.sh`: **33 tests passed** with the engine expectations restated
+for the 30 s window. The packaged verifier now observes **0 → 13.3 → 0 TPS**
+(400 tokens over a 2 s request inside the 30 s window) and waits up to 45 s
+for the reading to return to 0. Light and dark previews were inspected;
+`--ui-smoke-test` was not run. No resource measurement was taken: the
+monitor's one-second timer now runs up to 30 s after output stops instead of
+10 s.

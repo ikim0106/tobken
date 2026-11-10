@@ -33,8 +33,8 @@ public enum Verification {
         let monitor = LiveMonitor(store: store, configuration: MonitorConfiguration(enabledSources: [.codex], codexRoot: sessions))
         monitor.start()
         defer { monitor.stop() }
-        @MainActor func wait(_ predicate: () -> Bool) async throws {
-            let deadline = Date().addingTimeInterval(20)
+        @MainActor func wait(seconds: TimeInterval = 20, _ predicate: () -> Bool) async throws {
+            let deadline = Date().addingTimeInterval(seconds)
             while !predicate(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
             guard predicate() else { throw Failure.assertion("Timed out waiting for transcript updates") }
         }
@@ -51,9 +51,9 @@ public enum Verification {
         try await wait { store.snapshot.today.output == 600 }
         let snapshot = store.snapshot
         let dashboard = Dashboard(snapshot: snapshot)
-        // 400 tokens generated over the 2 s request, all inside the 10 s window: 400 / 10 = 40 TPS.
-        guard snapshot.live.output == 40 else {
-            throw Failure.assertion("Expected 400 output tokens placed in the 10-second window = 40 TPS, got \(snapshot.live.output)")
+        // 400 tokens generated over the 2 s request, all inside the 30 s window: 400 / 30 ≈ 13.3 TPS.
+        guard abs(snapshot.live.output - 400.0 / 30) < 1e-9 else {
+            throw Failure.assertion("Expected 400 output tokens placed in the 30-second window ≈ 13.3 TPS, got \(snapshot.live.output)")
         }
         guard snapshot.observedSeries?.total.last == snapshot.live.output else {
             throw Failure.assertion("The graph's latest reading differs from current TPS")
@@ -66,7 +66,8 @@ public enum Verification {
         guard snapshot.activities.allSatisfy({ $0.ttftP50 == nil }) else {
             throw Failure.assertion("Missing TTFT was fabricated")
         }
-        try await wait { store.snapshot.live.output == 0 }
+        // The output leaves the 30 s current-TPS window about 30 s after it was generated.
+        try await wait(seconds: 45) { store.snapshot.live.output == 0 }
         monitor.stop()
         let restartedStore = SpeedStore()
         let restarted = LiveMonitor(store: restartedStore, configuration: monitor.configuration)
@@ -74,6 +75,6 @@ public enum Verification {
         defer { restarted.stop() }
         try await wait { restartedStore.snapshot.state == .running && restartedStore.snapshot.today.total == 4_600 }
         guard restartedStore.snapshot.live.output == 0 else { throw Failure.assertion("Restart invented live TPS") }
-        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved; observed TPS 0 → 40 → 0."
+        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved; observed TPS 0 → 13.3 → 0."
     }
 }

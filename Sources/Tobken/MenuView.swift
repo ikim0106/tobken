@@ -213,7 +213,7 @@ struct MenuView: View {
                         Text("TPS").foregroundStyle(.secondary)
                     }
                     Text(liveCaption).font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary)
-                }.help("Output generated in the last 10 seconds, divided by 10. Output counts once its usage is logged and is placed across the time it was generated. Most tools log usage when a response finishes, so a running response shows up then; nothing is predicted from earlier speeds.")
+                }.help("Output generated in the last 30 seconds, divided by 30. Output counts once its usage is logged and is placed across the time it was generated. Most tools log usage when a response finishes, so a running response shows up then; nothing is predicted from earlier speeds.")
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Avg TPS").foregroundStyle(.secondary)
@@ -229,7 +229,7 @@ struct MenuView: View {
 
     private var liveCaption: String {
         let generating = dashboard.generatingCount
-        guard generating > 0 else { return "output, last 10 s" }
+        guard generating > 0 else { return "output, last 30 s" }
         return "\(generating) generating · counted when logged"
     }
 

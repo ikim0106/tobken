@@ -9,7 +9,9 @@ import Foundation
 ///
 /// The current rate is the output placed in the trailing `durationMs`, divided by its length, including quiet time.
 struct ObservedOutputWindow: Sendable {
-    static let durationMs: Int64 = 10_000
+    /// Long enough to span the gaps between completion-logged responses of one running task (tool calls,
+    /// thinking), so current TPS does not flicker between 0 and a burst while work continues.
+    static let durationMs: Int64 = 30_000
     /// The graph: one reading per second over the last minute.
     static let seriesSamples = 60
     static let seriesStepMs: Int64 = 1_000

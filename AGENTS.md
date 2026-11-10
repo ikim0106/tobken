@@ -37,7 +37,7 @@ say so instead of reporting it as passed. The version lives in `VERSION`.
 ## Metric invariants
 
 - TPS counts output only; input and cache never increase it.
-- Current TPS is output generated in the last ten seconds ÷ 10, including
+- Current TPS is output generated in the last 30 seconds ÷ 30, including
   quiet seconds. Output counts only once its usage is logged, placed across the
   interval it was generated (`ObservedOutputWindow`). Never substitute
   historical request speeds for unlogged output; in-flight requests are shown

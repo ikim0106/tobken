@@ -51,7 +51,7 @@ struct TPSChart: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Current TPS over the last minute")
         .accessibilityValue(history.peak.map { "Peak \(MetricFormat.rate($0)) TPS" } ?? "No readings yet")
-        .help("Current TPS at each second of the last minute: output placed across the time it was generated, averaged over 10 seconds. Most tools log usage when a response finishes, so recent seconds fill in then. Gaps mean no reading.")
+        .help("Current TPS at each second of the last minute: output placed across the time it was generated, averaged over 30 seconds. Most tools log usage when a response finishes, so recent seconds fill in then. Gaps mean no reading.")
     }
 
     @ViewBuilder private var caption: some View {
