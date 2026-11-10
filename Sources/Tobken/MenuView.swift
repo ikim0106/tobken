@@ -83,15 +83,17 @@ struct MenuView: View {
 
     // MARK: Header
 
+    /// Harness filters wrap onto further lines inside the card's padding, so none is clipped at the popover's corner.
     private var sourcePicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                sourceButton(nil, title: "All", symbol: "square.grid.2x2")
-                ForEach(dashboard.sources) { source in
-                    sourceButton(source.kind, title: source.kind.displayName, symbol: source.kind.symbol)
-                }
-            }.padding(.horizontal, 12).padding(.vertical, 10)
-        }.frame(height: 48)
+        FlowLayout(spacing: 4, lineSpacing: 4) {
+            sourceButton(nil, title: "All", symbol: "square.grid.2x2")
+            ForEach(dashboard.sources) { source in
+                sourceButton(source.kind, title: source.kind.displayName, symbol: source.kind.symbol)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func sourceButton(_ source: SourceKind?, title: String, symbol: String) -> some View {
@@ -333,6 +335,56 @@ struct MenuView: View {
 
     private func detail(_ title: String, _ value: String) -> some View {
         HStack { Text(title); Spacer(); Text(value).monospacedDigit() }
+    }
+}
+
+/// Left-aligned rows that wrap when the next item would not fit.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 4
+    var lineSpacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(for: subviews, width: proposal.width ?? .infinity)
+        let width = rows.map(\.width).max() ?? 0
+        let height = rows.map(\.height).reduce(0, +) + lineSpacing * CGFloat(max(rows.count - 1, 0))
+        return CGSize(width: proposal.width ?? width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(for: subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += row.height + lineSpacing
+        }
+    }
+
+    private struct Row {
+        var indices: [Int] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
+    private func rows(for subviews: Subviews, width maxWidth: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var current = Row()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+            if needed > maxWidth, !current.indices.isEmpty {
+                rows.append(current)
+                current = Row()
+            }
+            current.width = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+            current.height = max(current.height, size.height)
+            current.indices.append(index)
+        }
+        if !current.indices.isEmpty { rows.append(current) }
+        return rows
     }
 }
 

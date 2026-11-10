@@ -26,6 +26,15 @@ enum PreviewRenderer {
             filtered.selectedSource = .claudeCode
             try render(MenuView(model: filtered).padding(1).background(background), appearance: appearance,
                        to: directory.appendingPathComponent("tobken-filtered-\(name).png"))
+            // Many detected harnesses: the filter row must wrap inside the padding, not run into the corner.
+            let many = AppModel(demo: true)
+            for kind in [SourceKind.claudeDesktop, .gemini, .droid, .devin, .grokBuild] {
+                many.snapshot.sources.append(SourceStatus(kind: kind, enabled: true, rootPath: "", available: true,
+                                                          sessionCount: 1, live: .zero, today: TokenTotals(),
+                                                          activeAgents: 0))
+            }
+            try render(MenuView(model: many).padding(1).background(background), appearance: appearance,
+                       to: directory.appendingPathComponent("tobken-many-\(name).png"))
             try render(SettingsView(model: AppModel(demo: true)).frame(width: 580, height: 600), appearance: appearance,
                        to: directory.appendingPathComponent("tobken-settings-\(name).png"))
         }
