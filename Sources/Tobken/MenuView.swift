@@ -9,9 +9,10 @@ enum MenuMetrics {
     static let smallFont: CGFloat = 11
     static let captionFont: CGFloat = 10
     static let visibleModels = 6
-    static let tokensColumn: CGFloat = 64
-    static let averageColumn: CGFloat = 60
-    static let ttftColumn: CGFloat = 60
+    static let tokensColumn: CGFloat = 54
+    static let costColumn: CGFloat = 64
+    static let averageColumn: CGFloat = 56
+    static let ttftColumn: CGFloat = 58
     /// Room left for the menu bar and the popover's own chrome when capping the scrolling body.
     static let screenMargin: CGFloat = 160
 }
@@ -253,6 +254,10 @@ struct MenuView: View {
                 HStack(spacing: 0) {
                     Text("Model").frame(maxWidth: .infinity, alignment: .leading)
                     Text("Tokens").frame(width: MenuMetrics.tokensColumn, alignment: .trailing)
+                    if model.showCosts {
+                        Text("Cost").frame(width: MenuMetrics.costColumn, alignment: .trailing)
+                            .help("Estimated spend today at API list prices. The rows add up to today's total.")
+                    }
                     Text("Avg TPS").frame(width: MenuMetrics.averageColumn, alignment: .trailing)
                         .help("Today's output divided by summed request durations, including TTFT.")
                     Text("TTFT").frame(width: MenuMetrics.ttftColumn, alignment: .trailing)
@@ -288,10 +293,14 @@ struct MenuView: View {
                         Text(([row.sources.map(\.displayName).joined(separator: ", ")] + [row.provider].compactMap { $0 }).joined(separator: " · "))
                             .font(.system(size: MenuMetrics.captionFont)).foregroundStyle(.secondary).lineLimit(1)
                     }.frame(maxWidth: .infinity, alignment: .leading)
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(MetricFormat.tokens(row.metrics.totals.total))
-                        costText(row.metrics.cost, requests: row.metrics.totals.requests, size: MenuMetrics.captionFont)
-                    }.frame(width: MenuMetrics.tokensColumn, alignment: .trailing)
+                    Text(MetricFormat.tokens(row.metrics.totals.total)).frame(width: MenuMetrics.tokensColumn, alignment: .trailing)
+                    if model.showCosts {
+                        Text(MetricFormat.cost(row.metrics.cost, requests: row.metrics.totals.requests) ?? "—")
+                            .frame(width: MenuMetrics.costColumn, alignment: .trailing)
+                            .help(MetricFormat.cost(row.metrics.cost, requests: row.metrics.totals.requests) == nil
+                                  ? "No known price for this model; it is left out of today's total, never counted as $0."
+                                  : MetricFormat.costHelp(row.metrics.cost, requests: row.metrics.totals.requests))
+                    }
                     Text(MetricFormat.rate(row.metrics.averageTPS)).frame(width: MenuMetrics.averageColumn, alignment: .trailing)
                         .help("Average TPS today, including TTFT. Expand for current TPS and sample counts.")
                     Text(MetricFormat.latency(row.metrics.ttftP50)).frame(width: MenuMetrics.ttftColumn, alignment: .trailing)

@@ -73,13 +73,14 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   Some harnesses do not record it; `—` means unavailable. Expand a model for
   current TPS, sample counts, response duration p50, and TTFT p95 (20+ samples).
   Percentiles use the collector's logarithmic latency histogram.
-- **Costs** (smaller text beside today's total, model rows and harness rows):
+- **Costs** (beside today's total, a Cost column in the model table that adds
+  up to it, and harness rows):
   estimated spend at API list prices from each request's token usage, priced
   by model with separate rates for uncached input, cache reads and writes, and
   output. Subscription plans are billed differently, so treat this as the API
   equivalent. A request whose model has no known price is left out: "≥ $12.35"
-  means some requests are missing, and nothing is shown when none could be
-  priced (unknown is never $0). Prices come from the table bundled with the
+  means some requests are missing, and nothing (`—` in the model table) is
+  shown when none could be priced (unknown is never $0). Prices come from the table bundled with the
   app; once a day Tobken downloads the public
   [price table](https://github.com/zoefix/agent-speed/blob/main/spec/assets/prices.json)
   if a newer one exists. That is a plain HTTPS GET with a generic user agent;

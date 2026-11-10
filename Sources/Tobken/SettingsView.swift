@@ -26,7 +26,7 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
-                Toggle("Show costs beside token counts", isOn: $model.showCosts)
+                Toggle("Show estimated costs", isOn: $model.showCosts)
                 if !model.isDemo {
                     Toggle("Update prices daily", isOn: $model.updatesPrices)
                         .onChange(of: model.updatesPrices) { _, enabled in if enabled { model.checkPrices() } }
