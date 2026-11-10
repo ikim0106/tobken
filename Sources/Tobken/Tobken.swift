@@ -184,7 +184,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if settingsWindow == nil {
             let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: model)))
             window.title = "Tobken Settings"
-            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.contentMinSize = NSSize(width: 520, height: 420)
+            window.setContentSize(NSSize(width: 580, height: 600))
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.center()
