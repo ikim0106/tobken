@@ -19,8 +19,8 @@ public enum MetricFormat {
     public static func latency(_ milliseconds: Double?) -> String {
         guard let milliseconds else { return "—" }
         return milliseconds < 1_000
-            ? String(format: "~%.0f ms", milliseconds)
-            : String(format: "~%.1f s", milliseconds / 1_000)
+            ? String(format: "%.0f ms", milliseconds)
+            : String(format: "%.1f s", milliseconds / 1_000)
     }
 
     public static func exact(_ value: Int) -> String {
@@ -52,7 +52,7 @@ public struct Dashboard {
     public var statusTitle: String {
         if case .starting = snapshot.state { return "Tobken · …" }
         let rate = Dashboard(snapshot: snapshot).currentTPS
-        return "\(MetricFormat.tokens(snapshot.today.total)) today · \((rate ?? 0) > 0 ? "~" : "")\(MetricFormat.rate(rate)) TPS"
+        return "\(MetricFormat.tokens(snapshot.today.total)) today · \(MetricFormat.rate(rate)) TPS"
     }
 
     public var selectedActivities: [ActivityMetrics] {

@@ -40,7 +40,7 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   logged, so an unfinished request may appear later. Missing model names still
   contribute to totals.
 - **Current TPS:** summed output TPS across concurrent requests in a trailing
-  three-second window. `~` marks an approximation: completed output is spread
+  three-second window. Completed output is spread
   across the logged request interval, and active requests use recent rates.
   This is an estimate from logs, not a measurement of individual streamed tokens.
   An active request without timing/reference data shows `—`; idle shows `0`.

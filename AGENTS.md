@@ -7,6 +7,7 @@ Tobken is a native macOS menu bar app. Product labels use TPS, TTFT, and tokens
 today. TPS always counts output; input/cache must never increase it. Preserve
 unknown and estimated readings separately from zero. Filters change the open
 menu, while the status item always shows the global total.
+Display TPS and TTFT without `~` prefixes; explain approximations in tooltips.
 
 `Vendor/AgentSpeed` is pinned source, with local changes recorded in its
 `UPSTREAM.md`. Extend its existing request ledger rather than rescanning histories

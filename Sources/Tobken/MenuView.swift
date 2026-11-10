@@ -127,7 +127,7 @@ struct MenuView: View {
                     Text("Current TPS").foregroundStyle(.secondary)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(dashboard.liveTPS > 0 ? "~" : "")\(MetricFormat.rate(dashboard.currentTPS))")
+                    Text(MetricFormat.rate(dashboard.currentTPS))
                         .font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
                     Text("TPS").foregroundStyle(.secondary)
                 }
@@ -203,7 +203,7 @@ struct MenuView: View {
             }.buttonStyle(.plain).help(row.name + (row.provider.map { " · \($0)" } ?? ""))
             if expanded.contains(row.id) {
                 VStack(spacing: 7) {
-                    detail("Current TPS", "\(row.metrics.liveTPS > 0 ? "~" : "")\(MetricFormat.rate(row.metrics.liveTPS))")
+                    detail("Current TPS", MetricFormat.rate(row.metrics.liveTPS))
                     detail("Input / output", "\(MetricFormat.tokens(row.metrics.totals.input)) / \(MetricFormat.tokens(row.metrics.totals.output))")
                     detail("TTFT p95", MetricFormat.latency(row.metrics.ttftP95))
                         .help("Shown with at least 20 timed samples.")
@@ -227,7 +227,7 @@ struct MenuView: View {
                         Text(source.kind.displayName)
                         Spacer()
                         if source.live.output > 0 {
-                            Text("~\(MetricFormat.rate(source.live.output)) TPS").foregroundStyle(.secondary)
+                            Text("\(MetricFormat.rate(source.live.output)) TPS").foregroundStyle(.secondary)
                         }
                         Text(MetricFormat.tokens(source.today.total)).monospacedDigit()
                         Image(systemName: "chevron.right").font(.system(size: 8)).foregroundStyle(.tertiary)
