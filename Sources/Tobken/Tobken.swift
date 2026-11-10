@@ -1,0 +1,185 @@
+import AgentSpeedCore
+import AppKit
+import SwiftUI
+import TobkenCore
+
+@main
+enum Tobken {
+    @MainActor static func main() {
+        let arguments = CommandLine.arguments
+        if arguments.contains("--verify") {
+            Task { @MainActor in
+                do { print(try await Verification.run()); exit(0) }
+                catch { FileHandle.standardError.write(Data("Verification failed: \(error)\n".utf8)); exit(1) }
+            }
+            dispatchMain()
+        }
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        if let index = arguments.firstIndex(of: "--render-preview"), arguments.indices.contains(index + 1) {
+            do { try PreviewRenderer.render(to: URL(fileURLWithPath: arguments[index + 1])); exit(0) }
+            catch { FileHandle.standardError.write(Data("Preview failed: \(error)\n".utf8)); exit(1) }
+        }
+        let smokeIndex = arguments.firstIndex(of: "--ui-smoke-test")
+        let smokeDirectory = smokeIndex.flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+        let controller = AppController(demo: arguments.contains("--demo") || smokeIndex != nil, smokeDirectory: smokeDirectory)
+        app.delegate = controller
+        withExtendedLifetime(controller) { app.run() }
+    }
+}
+
+@MainActor
+final class AppController: NSObject, NSApplicationDelegate {
+    private let model: AppModel
+    private var statusItem: NSStatusItem?
+    private let popover = NSPopover()
+    private var settingsWindow: NSWindow?
+    private var smokeDirectory: String?
+
+    init(demo: Bool, smokeDirectory: String? = nil) {
+        model = AppModel(demo: demo)
+        self.smokeDirectory = smokeDirectory
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = item
+        if let button = item.button {
+            button.image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: "Tobken")
+            button.image?.isTemplate = true
+            button.imagePosition = .imageLeading
+            button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+            button.title = " " + model.dashboard.statusTitle
+            button.target = self
+            button.action = #selector(toggleMenu)
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.toolTip = "Today's tokens across all harnesses · current TPS"
+        }
+        popover.behavior = .transient
+        popover.animates = false
+        let hostingController = NSHostingController(rootView: MenuView(
+            model: model,
+            openSettings: { [weak self] in self?.showSettings() },
+            quit: { NSApp.terminate(nil) }
+        ))
+        hostingController.sizingOptions = [.preferredContentSize, .intrinsicContentSize]
+        popover.contentViewController = hostingController
+        popover.contentSize = hostingController.view.fittingSize
+        model.menuSizeChanged = { [weak self] height in
+            self?.popover.contentSize = NSSize(width: 408, height: height)
+        }
+        model.statusChanged = { [weak self] title in self?.statusItem?.button?.title = " " + title }
+        model.start()
+        if let smokeDirectory {
+            Task { @MainActor in
+                do {
+                    try await smokeTest(directory: URL(fileURLWithPath: smokeDirectory))
+                    print("PASS: native status item opens dropdown; filter preserves global total; Settings opens.")
+                    NSApp.terminate(nil)
+                } catch {
+                    FileHandle.standardError.write(Data("UI smoke test failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) { model.stop() }
+
+    @objc private func toggleMenu() {
+        guard let button = statusItem?.button else { return }
+        if popover.isShown { popover.performClose(nil) }
+        else {
+            NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
+        }
+    }
+
+    private func showSettings() {
+        popover.performClose(nil)
+        if settingsWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: model)))
+            window.title = "Tobken Settings"
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func smokeTest(directory: URL) async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try await Task.sleep(for: .milliseconds(500))
+        let title = statusItem?.button?.title
+        guard title?.contains("17.8M today") == true else { throw Verification.Failure.assertion("Wrong native status title") }
+        guard let button = statusItem?.button, let action = button.action else {
+            throw Verification.Failure.assertion("Status item has no button/action")
+        }
+        let sent = NSApp.sendAction(action, to: button.target, from: button)
+        try await Task.sleep(for: .milliseconds(350))
+        guard popover.isShown, let view = popover.contentViewController?.view, view.bounds.height > 300 else {
+            throw Verification.Failure.assertion("Action sent=\(sent), button=\(button.bounds), dropdown shown=\(popover.isShown), bounds=\(String(describing: popover.contentViewController?.view.bounds))")
+        }
+        try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-menu.png"))
+        let allHeight = view.bounds.height
+        model.selectedSource = .claudeCode
+        try await Task.sleep(for: .milliseconds(200))
+        guard statusItem?.button?.title == title, model.dashboard.models.count == 2 else {
+            throw Verification.Failure.assertion("Filter affected global status or wrong model count")
+        }
+        guard view.bounds.height < allHeight else {
+            throw Verification.Failure.assertion("Filtered menu did not shrink: all=\(allHeight), filtered=\(view.bounds.height)")
+        }
+        try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-filtered.png"))
+        showSettings()
+        try await Task.sleep(for: .milliseconds(200))
+        guard settingsWindow?.isVisible == true, let settingsView = settingsWindow?.contentView else {
+            throw Verification.Failure.assertion("Settings did not open")
+        }
+        try PreviewRenderer.capture(settingsView, to: directory.appendingPathComponent("native-settings.png"))
+        let report: [String: Any] = ["statusTitle": title ?? "", "popoverOpened": true,
+                                    "filterPreservedStatus": true, "settingsOpened": true,
+                                    "allHeight": allHeight, "filteredHeight": view.bounds.height]
+        try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("ui-smoke.json"))
+    }
+}
+
+@MainActor
+enum PreviewRenderer {
+    static func capture(_ view: NSView, to file: URL) throws {
+        view.layoutSubtreeIfNeeded()
+        guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { throw Verification.Failure.assertion("No bitmap") }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        guard let png = bitmap.representation(using: .png, properties: [:]) else { throw Verification.Failure.assertion("No PNG") }
+        try png.write(to: file)
+    }
+
+    static func render(to directory: URL) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            let model = AppModel(demo: true)
+            let view = NSHostingView(rootView: MenuView(model: model)
+                .padding(1)
+                .background(name == "dark" ? Color(red: 0.16, green: 0.16, blue: 0.17) : Color(red: 0.96, green: 0.96, blue: 0.96)))
+            view.appearance = NSAppearance(named: appearance)
+            let size = view.fittingSize
+            let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.appearance = view.appearance
+            window.backgroundColor = NSColor.windowBackgroundColor
+            window.contentView = view
+            view.frame = CGRect(origin: .zero, size: size)
+            view.layoutSubtreeIfNeeded()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+            window.display()
+            let file = directory.appendingPathComponent("tobken-\(name).png")
+            try capture(view, to: file)
+            print(file.path)
+            window.close()
+        }
+    }
+}

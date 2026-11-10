@@ -1,0 +1,21 @@
+name: macOS
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test accounting and transcript updates
+        run: Scripts/test.sh
+      - name: Build app
+        run: Scripts/build.sh
+      - name: Verify packaged binary
+        run: dist/Tobken.app/Contents/MacOS/Tobken --verify
+      - name: Package app
+        run: ditto -c -k --keepParent dist/Tobken.app dist/Tobken.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tobken
+          path: dist/Tobken.zip

@@ -1,0 +1,15 @@
+#!/bin/zsh
+set -euo pipefail
+cd "${0:A:h:h}"
+export CLANG_MODULE_CACHE_PATH="${TMPDIR:-/tmp}/tobken-clang-cache"
+export SWIFTPM_MODULECACHE_OVERRIDE="${TMPDIR:-/tmp}/tobken-swift-module-cache"
+swift build -c release --disable-sandbox --cache-path "${TMPDIR:-/tmp}/tobken-swiftpm/cache" --config-path "${TMPDIR:-/tmp}/tobken-swiftpm/config" --security-path "${TMPDIR:-/tmp}/tobken-swiftpm/security"
+app_dir="$PWD/dist/Tobken.app"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources/Licenses"
+cp .build/release/Tobken "$app_dir/Contents/MacOS/Tobken"
+cp Resources/Info.plist "$app_dir/Contents/Info.plist"
+cp Vendor/AgentSpeed/LICENSE "$app_dir/Contents/Resources/Licenses/AgentSpeed.txt"
+cp Vendor/AgentSpeed/Sources/CZstd/LICENSE "$app_dir/Contents/Resources/Licenses/Zstd.txt"
+cp Vendor/CodexBar/LICENSE "$app_dir/Contents/Resources/Licenses/CodexBar.txt"
+codesign --force --sign - "$app_dir"
+print "$app_dir"
