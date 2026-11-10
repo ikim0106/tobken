@@ -115,6 +115,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         try await Task.sleep(for: .milliseconds(500))
         let title = statusItem?.button?.title
         guard title?.contains("17.8M today") == true else { throw Verification.Failure.assertion("Wrong native status title") }
+        guard model.tpsHistory.samples.last?.value == model.dashboard.currentTPS else {
+            throw Verification.Failure.assertion("Chart endpoint differs from displayed TPS")
+        }
         guard let button = statusItem?.button, let action = button.action else {
             throw Verification.Failure.assertion("Status item has no button/action")
         }
@@ -133,6 +136,15 @@ final class AppController: NSObject, NSApplicationDelegate {
         guard view.bounds.height < allHeight else {
             throw Verification.Failure.assertion("Filtered menu did not shrink: all=\(allHeight), filtered=\(view.bounds.height)")
         }
+        var next = model.snapshot
+        next.timestamp = next.timestamp.addingTimeInterval(1)
+        next.live.output = 166
+        next.activities[0].liveTPS += 20
+        model.receive(next)
+        guard model.tpsHistory.samples.last?.value == 166, model.dashboard.currentTPS == 54,
+              statusItem?.button?.title.contains("166 TPS") == true else {
+            throw Verification.Failure.assertion("Menu filter changed the global TPS history")
+        }
         try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-filtered.png"))
         showSettings()
         try await Task.sleep(for: .milliseconds(200))
@@ -142,6 +154,8 @@ final class AppController: NSObject, NSApplicationDelegate {
         try PreviewRenderer.capture(settingsView, to: directory.appendingPathComponent("native-settings.png"))
         let report: [String: Any] = ["statusTitle": title ?? "", "popoverOpened": true,
                                     "filterPreservedStatus": true, "settingsOpened": true,
+                                    "chartEndpointMatchesTPS": true,
+                                    "filterPreservedGlobalChart": true,
                                     "allHeight": allHeight, "filteredHeight": view.bounds.height]
         try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("ui-smoke.json"))

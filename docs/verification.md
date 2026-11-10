@@ -58,3 +58,18 @@ see the [research results](../research/reports/verification.md).
 Current TPS and TTFT remain estimates from transcript timing. There is no
 interception of actual token streaming, Cursor reader, remote aggregation, or
 browser chat tracking in this version.
+
+## TPS graph correction
+
+`Scripts/test.sh`: **14 tests passed**, including four graph regressions.
+The constant-rate reproduction runs the actual engine across a second boundary:
+its current partial bucket falls from 99.9 to zero while its trailing live rate
+stays at 100 TPS. This confirms why the previous sparkline showed a false dip.
+The new graph records the same live rate as the displayed number; its two
+readings remain `[100, 100]` across that boundary.
+
+Additional checks cover replacing only the current second's reading, preserving
+past readings, retaining unknown readings as gaps, limiting the time window to
+60 seconds, and keeping the vertical scale stable when an old peak expires.
+The native smoke test also checks that the latest graph reading matches the
+displayed TPS. Light and dark previews were regenerated from the production UI.

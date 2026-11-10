@@ -134,9 +134,7 @@ struct MenuView: View {
             }.help("Output tokens per second across concurrent requests, over a trailing 3-second window. Rates are reconstructed from transcript timing; in-flight requests use recent response rates.")
             Spacer(minLength: 0)
             if model.selectedSource == nil {
-                Sparkline(points: Array(model.snapshot.history.suffix(60)).map { $0.measured.output + $0.estimated.output })
-                    .stroke(green, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
-                    .frame(width: 103, height: 32).accessibilityLabel("TPS over the last minute")
+                TPSChart(history: model.tpsHistory, color: green)
             }
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Avg TPS").foregroundStyle(.secondary)
@@ -268,21 +266,6 @@ struct MenuView: View {
 private struct MenuContentHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
-private struct Sparkline: Shape {
-    var points: [Double]
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        guard points.count > 1 else { return path }
-        let peak = max(points.max() ?? 1, 1)
-        for (index, value) in points.enumerated() {
-            let point = CGPoint(x: rect.minX + rect.width * Double(index) / Double(points.count - 1),
-                                y: rect.maxY - rect.height * max(0, value) / peak)
-            if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
-        }
-        return path
-    }
 }
 
 extension MonitorWarning {

@@ -44,6 +44,11 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   across the logged request interval, and active requests use recent rates.
   This is an estimate from logs, not a measurement of individual streamed tokens.
   An active request without timing/reference data shows `—`; idle shows `0`.
+  The graph records that same TPS reading over 60 seconds, with the latest
+  reading at the right-hand dot. It keeps past readings fixed and leaves gaps
+  for unavailable readings. The labeled scale stays fixed during activity,
+  grows for new peaks, and resets after a full idle minute. It fills as the
+  app observes activity; it does not reconstruct a history on startup.
 - **TPS in model rows / Avg TPS:** today's output divided by summed timed request
   durations, including TTFT. It is weighted by duration, not an average of the
   displayed per-request rates. Intervals under 500 ms are widened to 500 ms;

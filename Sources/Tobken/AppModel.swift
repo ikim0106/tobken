@@ -8,6 +8,7 @@ final class AppModel: ObservableObject {
     @Published var snapshot: SpeedSnapshot = .empty
     @Published var selectedSource: SourceKind?
     @Published var extraPaths: [String: [String]]
+    @Published var tpsHistory = TPSHistory()
     let store = SpeedStore()
     private var monitor: LiveMonitor?
     private var listener: UUID?
@@ -20,19 +21,31 @@ final class AppModel: ObservableObject {
     init(demo: Bool = false) {
         isDemo = demo
         extraPaths = demo ? [:] : (UserDefaults.standard.dictionary(forKey: "extraPaths") as? [String: [String]] ?? [:])
-        if demo { snapshot = Demo.snapshot() }
+        if demo {
+            snapshot = Demo.snapshot()
+            for point in snapshot.history {
+                tpsHistory.record(at: point.time, value: point.measured.output + point.estimated.output)
+            }
+            tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
+        }
     }
 
     func start() {
         guard !isDemo else { statusChanged?(dashboard.statusTitle); return }
         listener = store.addLiveListener { [weak self] snapshot in
-            guard let self else { return }
-            self.snapshot = snapshot
-            self.statusChanged?(self.dashboard.statusTitle)
+            self?.receive(snapshot)
         }
         let monitor = LiveMonitor(store: store, configuration: configuration)
         self.monitor = monitor
         monitor.start()
+    }
+
+    func receive(_ snapshot: SpeedSnapshot) {
+        self.snapshot = snapshot
+        if snapshot.state == .running {
+            tpsHistory.record(at: snapshot.timestamp, value: Dashboard(snapshot: snapshot).currentTPS)
+        }
+        statusChanged?(dashboard.statusTitle)
     }
 
     func stop() { monitor?.stop() }
@@ -40,6 +53,7 @@ final class AppModel: ObservableObject {
     func refresh() {
         guard !isDemo else { return }
         snapshot = .empty
+        tpsHistory = TPSHistory()
         statusChanged?(dashboard.statusTitle)
         monitor?.stop()
         monitor?.start()
@@ -76,6 +90,7 @@ final class AppModel: ObservableObject {
         guard !isDemo else { return }
         UserDefaults.standard.set(extraPaths, forKey: "extraPaths")
         snapshot = .empty
+        tpsHistory = TPSHistory()
         monitor?.update(configuration: configuration)
     }
 }

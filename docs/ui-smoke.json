@@ -1,6 +1,8 @@
 {
   "allHeight" : 634,
+  "chartEndpointMatchesTPS" : true,
   "filteredHeight" : 488,
+  "filterPreservedGlobalChart" : true,
   "filterPreservedStatus" : true,
   "popoverOpened" : true,
   "settingsOpened" : true,
