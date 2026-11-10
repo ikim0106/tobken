@@ -48,6 +48,11 @@ final class AppModel: ObservableObject {
         statusChanged?(dashboard.statusTitle)
     }
 
+    func prepareMenu() {
+        guard !isDemo, snapshot.state == .running else { return }
+        tpsHistory.record(at: Date(), value: Dashboard(snapshot: snapshot).currentTPS)
+    }
+
     func stop() { monitor?.stop() }
 
     func refresh() {

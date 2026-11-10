@@ -20,6 +20,7 @@ struct SpeedEngine: Sendable {
 
     private(set) var agents: [String: EngineAgent] = [:]
     private var responses: [String: ResponseRecord] = [:]
+    private var observedOutput: ObservedOutputWindow?
     private var projects: [String: String] = [:]
     private var ledger: DayLedger?
     private var lastResponse: ResponseSummary?
@@ -52,8 +53,9 @@ struct SpeedEngine: Sendable {
     private var remoteResponseCounts: [String: Int] = [:]
     var remoteResponseLimit = RemoteLimits.responses
 
-    init(pricing: PriceBook? = nil) {
+    init(pricing: PriceBook? = nil, observesOutput: Bool = false) {
         self.pricing = pricing
+        observedOutput = observesOutput ? ObservedOutputWindow() : nil
         pricedVersion = pricing?.currentVersion
     }
 
@@ -95,6 +97,7 @@ struct SpeedEngine: Sendable {
                 ? pricing.cost(of: record, day: dayLabeler.label(forMs: record.endMs)) : nil
         }
         let old = responses.updateValue(record, forKey: record.key)
+        if emitsEvents, let nowMs { observedOutput?.replace(old, with: record, at: nowMs) }
         projects[record.key] = project
         ledger?.replace(old, with: record)
         if old == nil, record.host != RemoteHost.localId { countRemote(record.host) }
@@ -127,7 +130,8 @@ struct SpeedEngine: Sendable {
     }
 
     /// `subsets` are the subsets whose measured peak today is reported in `subsetPeaks` (METRICS 6.8).
-    mutating func advance(nowMs: Int64, todayStartMs: Int64, emitsEvents: Bool, subsets: Set<SubsetKey> = []) -> EngineOutput {
+    mutating func advance(nowMs: Int64, todayStartMs: Int64, emitsEvents: Bool, subsets: Set<SubsetKey> = [],
+                          includeHistory: Bool = true) -> EngineOutput {
         rollOverIfNeeded(todayStartMs: todayStartMs)
         prune(nowMs: nowMs, todayStartMs: todayStartMs)
         repriceIfNeeded()
@@ -136,11 +140,11 @@ struct SpeedEngine: Sendable {
         let measured = timed.filter(\.record.isFinal)
         let unmeasured = timed.filter { !$0.record.isFinal }
         let references = SpeedReferences(timed: measured, nowMs: nowMs)
-        let window = LiveWindow(
+        let window = observedOutput?.advance(nowMs: nowMs) ?? LiveWindow(
             nowMs: nowMs, measured: measured, unmeasured: unmeasured, agents: agents,
             latestEnds: latestEndsByAgent(), references: references, providers: agentProviders, cells: tracksCells
         )
-        let history = Self.history(nowMs: nowMs, measured: measured, estimates: window.estimates)
+        let history = includeHistory ? Self.history(nowMs: nowMs, measured: measured, estimates: window.estimates) : []
 
         let live = window.total
         if live.output > observedPeak.output {

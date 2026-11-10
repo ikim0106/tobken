@@ -39,11 +39,14 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   in input/output; they are not added twice. Requests count when their usage is
   logged, so an unfinished request may appear later. Missing model names still
   contribute to totals.
-- **Current TPS:** summed output TPS across concurrent requests in a trailing
-  three-second window. Completed output is spread
-  across the logged request interval, and active requests use recent rates.
-  This is an estimate from logs, not a measurement of individual streamed tokens.
-  An active request without timing/reference data shows `—`; idle shows `0`.
+- **Current TPS:** new output tokens observed in logs in the last five seconds,
+  divided by five, summed across all tools and models. Quiet seconds count as
+  zero; after five seconds without new output the reading is `0`, even if a
+  request is still marked active. Input never increases TPS. Startup history,
+  duplicate records and finalizing an unchanged usage count do not add output.
+  Tools that report usage only at completion produce bursts; this measures
+  observed log throughput, not individual token emission or predicted speed.
+  A dash means the monitor is starting or has no supported sources.
   The graph records that same TPS reading over 60 seconds, with the latest
   reading at the right-hand dot. It keeps past readings fixed and leaves gaps
   for unavailable readings. The labeled scale stays fixed during activity,
@@ -51,7 +54,8 @@ The UI smoke test requires an active macOS desktop session and uses demo data.
   app observes activity; it does not reconstruct a history on startup.
 - **TPS in model rows / Avg TPS:** today's output divided by summed timed request
   durations, including TTFT. It is weighted by duration, not an average of the
-  displayed per-request rates. Intervals under 500 ms are widened to 500 ms;
+  displayed per-request rates. This includes pauses within requests and excludes
+  idle time between them. Intervals under 500 ms are widened to 500 ms;
   missing or invalid intervals do not contribute to speed.
 - **TTFT:** approximate p50 from the first content timestamp a harness writes.
   Some harnesses do not record it; `—` means unavailable. Expand a model for
@@ -62,6 +66,21 @@ This first version reads local logs. It does not capture browser chat, remote
 machines, or every arbitrary API client. Cursor is not supported yet. It starts
 no proxy, account login, pricing fetch, telemetry, or remote listener. Your
 transcripts are not uploaded.
+
+## Resource use
+
+File notifications trigger incremental reads. Snapshots publish at most once a
+second during output activity and stop when the five-second window reaches
+zero. A ten-second discovery check catches missed events and new sources.
+Recent files have at most 32 transcript watchers plus OpenCode database/WAL
+watchers. Unchanged menu-bar text is not redrawn. The menu and Settings views
+are created when opened and released when closed; no hidden graph animates.
+The graph fills known quiet intervals with zeros when activity resumes or the
+menu opens, without an idle drawing timer.
+
+See [resource measurements](docs/resource-use.md) for measured CPU/memory costs
+and the repeatable sampling command. Startup still reads today's history;
+memory also depends on the number of requests and sessions being tracked.
 
 ## Supported harnesses
 

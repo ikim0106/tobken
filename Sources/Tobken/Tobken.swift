@@ -31,7 +31,7 @@ enum Tobken {
 }
 
 @MainActor
-final class AppController: NSObject, NSApplicationDelegate {
+final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowDelegate {
     private let model: AppModel
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
@@ -59,18 +59,15 @@ final class AppController: NSObject, NSApplicationDelegate {
         }
         popover.behavior = .transient
         popover.animates = false
-        let hostingController = NSHostingController(rootView: MenuView(
-            model: model,
-            openSettings: { [weak self] in self?.showSettings() },
-            quit: { NSApp.terminate(nil) }
-        ))
-        hostingController.sizingOptions = [.preferredContentSize, .intrinsicContentSize]
-        popover.contentViewController = hostingController
-        popover.contentSize = hostingController.view.fittingSize
+        popover.delegate = self
         model.menuSizeChanged = { [weak self] height in
             self?.popover.contentSize = NSSize(width: 408, height: height)
         }
-        model.statusChanged = { [weak self] title in self?.statusItem?.button?.title = " " + title }
+        model.statusChanged = { [weak self] title in
+            guard let button = self?.statusItem?.button else { return }
+            let text = " " + title
+            if button.title != text { button.title = text }
+        }
         model.start()
         if let smokeDirectory {
             Task { @MainActor in
@@ -86,16 +83,37 @@ final class AppController: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func prepareMenu() {
+        model.prepareMenu()
+        let hostingController = NSHostingController(rootView: MenuView(
+            model: model,
+            openSettings: { [weak self] in self?.showSettings() },
+            quit: { NSApp.terminate(nil) }
+        ))
+        hostingController.sizingOptions = [.preferredContentSize, .intrinsicContentSize]
+        popover.contentViewController = hostingController
+        popover.contentSize = hostingController.view.fittingSize
+    }
+
     func applicationWillTerminate(_ notification: Notification) { model.stop() }
 
     @objc private func toggleMenu() {
         guard let button = statusItem?.button else { return }
         if popover.isShown { popover.performClose(nil) }
         else {
+            prepareMenu()
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popover.contentViewController = nil
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        if notification.object as? NSWindow === settingsWindow { settingsWindow = nil }
     }
 
     private func showSettings() {
@@ -105,6 +123,7 @@ final class AppController: NSObject, NSApplicationDelegate {
             window.title = "Tobken Settings"
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.delegate = self
             window.center()
             settingsWindow = window
         }
@@ -116,6 +135,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try await Task.sleep(for: .milliseconds(500))
         let title = statusItem?.button?.title
+        guard popover.contentViewController == nil else {
+            throw Verification.Failure.assertion("Closed menu retained its SwiftUI view")
+        }
         guard title?.contains("17.8M today") == true else { throw Verification.Failure.assertion("Wrong native status title") }
         guard model.tpsHistory.samples.last?.value == model.dashboard.currentTPS else {
             throw Verification.Failure.assertion("Chart endpoint differs from displayed TPS")
@@ -150,6 +172,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         try PreviewRenderer.capture(view, to: directory.appendingPathComponent("native-filtered.png"))
         showSettings()
         try await Task.sleep(for: .milliseconds(200))
+        guard popover.contentViewController == nil else {
+            throw Verification.Failure.assertion("Closing the menu did not release its view")
+        }
         guard settingsWindow?.isVisible == true, let settingsView = settingsWindow?.contentView else {
             throw Verification.Failure.assertion("Settings did not open")
         }
@@ -161,11 +186,24 @@ final class AppController: NSObject, NSApplicationDelegate {
         guard !scrollers.isEmpty, scrollers.allSatisfy({ $0.scrollerStyle == .overlay }) else {
             throw Verification.Failure.assertion("Scrollbars did not use the auto-fading overlay style")
         }
+        settingsWindow?.close()
+        guard settingsWindow == nil else {
+            throw Verification.Failure.assertion("Closing Settings did not release its window")
+        }
+        toggleMenu()
+        guard popover.isShown, popover.contentViewController != nil else {
+            throw Verification.Failure.assertion("Menu did not reopen")
+        }
+        popover.performClose(nil)
+        guard popover.contentViewController == nil else {
+            throw Verification.Failure.assertion("Reopened menu did not release its view")
+        }
         let report: [String: Any] = ["statusTitle": title ?? "", "popoverOpened": true,
                                     "filterPreservedStatus": true, "settingsOpened": true,
                                     "chartEndpointMatchesTPS": true,
                                     "filterPreservedGlobalChart": true,
                                     "scrollbarsUseOverlayStyle": true,
+                                    "closedViewsReleased": true, "menuReopened": true,
                                     "allHeight": allHeight, "filteredHeight": view.bounds.height]
         try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("ui-smoke.json"))

@@ -1,9 +1,11 @@
 {
   "allHeight" : 634,
   "chartEndpointMatchesTPS" : true,
+  "closedViewsReleased" : true,
   "filteredHeight" : 488,
   "filterPreservedGlobalChart" : true,
   "filterPreservedStatus" : true,
+  "menuReopened" : true,
   "popoverOpened" : true,
   "scrollbarsUseOverlayStyle" : true,
   "settingsOpened" : true,

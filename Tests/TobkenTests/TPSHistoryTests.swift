@@ -4,6 +4,18 @@ import Testing
 import TobkenCore
 
 struct TPSHistoryTests {
+    @Test func sleepingIdleMonitorStillRecordsZerosWhenTheMenuReopens() {
+        var history = TPSHistory()
+        history.record(at: Date(timeIntervalSince1970: 0), value: 320)
+        history.record(at: Date(timeIntervalSince1970: 5), value: 0)
+        history.record(at: Date(timeIntervalSince1970: 600), value: 0)
+        #expect(history.samples.count == 61)
+        #expect(history.samples.allSatisfy { $0.value == 0 })
+        #expect(history.samples.first?.time == Date(timeIntervalSince1970: 540))
+        #expect(history.ceiling == 100)
+        history.record(at: Date(timeIntervalSince1970: 601), value: 20)
+        #expect(history.samples.last?.value == 20)
+    }
     @Test func secondRolloverDoesNotCreateAPhantomDrop() throws {
         var engine = SpeedEngine()
         engine.upsert(ResponseRecord(key: "reference", source: .codex, agentId: "reference", model: "model",

@@ -13,7 +13,7 @@ public struct ActivityKey: Hashable, Sendable, Identifiable {
     }
 }
 
-/// Daily request statistics and a projection of the engine's three-second live window.
+/// Daily request statistics and current output TPS by activity.
 public struct ActivityMetrics: Equatable, Sendable, Identifiable {
     public var key: ActivityKey
     public var id: ActivityKey { key }

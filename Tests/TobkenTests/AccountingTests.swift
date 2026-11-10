@@ -109,14 +109,16 @@ struct AccountingTests {
         #expect(abs((ledger.activities.values.first?.ttftP50 ?? 0) - 500) < 50)
     }
 
-    @Test func activeRequestsWithoutRatesShowUnknownInsteadOfIdle() {
+    @Test func activeRequestsWithoutNewOutputShowZeroObservedTPS() {
         var snapshot = SpeedSnapshot.empty
         snapshot.state = .running
         snapshot.generatingCount = 1
-        #expect(Dashboard(snapshot: snapshot).currentTPS == nil)
-        #expect(Dashboard(snapshot: snapshot).statusTitle.contains("— TPS"))
+        #expect(Dashboard(snapshot: snapshot).currentTPS == 0)
+        #expect(Dashboard(snapshot: snapshot).statusTitle.contains("0 TPS"))
         snapshot.generatingCount = 0
         #expect(Dashboard(snapshot: snapshot).currentTPS == 0)
+        snapshot.state = .noSources
+        #expect(Dashboard(snapshot: snapshot).currentTPS == nil)
     }
 
     @Test @MainActor func actualMonitorSeedsAppendsAndRestarts() async throws {

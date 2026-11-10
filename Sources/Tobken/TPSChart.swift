@@ -45,7 +45,7 @@ struct TPSChart: View {
         .frame(width: 132)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Current TPS readings over the last 60 seconds, scale 0 to \(MetricFormat.rate(history.ceiling)) TPS")
-        .help("The same trailing 3-second TPS shown on the left, sampled each second. The dot is the latest reading. Past readings stay fixed; gaps mean no reading. The scale stays fixed during activity and grows for new peaks.")
+        .help("The same trailing 5-second observed TPS shown on the left, sampled once a second during activity. Quiet time counts as zero. The dot is the latest reading. Past readings stay fixed; gaps mean no reading. The scale stays fixed during activity and grows for new peaks.")
     }
 
     private func coordinates(in rect: CGRect) -> [CGPoint?] {

@@ -147,7 +147,7 @@ final class TranscriptSession {
         self.configuration = configuration
         self.limits = limits
         self.clock = clock
-        engine = SpeedEngine(pricing: pricing)
+        engine = SpeedEngine(pricing: pricing, observesOutput: true)
         roots = configuration.allRoots().map { family, path, readable in
             Root(family: family, path: path, canonicalPath: path, enabled: configuration.reads(family), available: false,
                  readable: readable,
@@ -180,6 +180,25 @@ final class TranscriptSession {
         for directory in openclaw?.watchedDirectories ?? [] where !paths.contains(directory) { paths.append(directory) }
         for directory in hermes?.watchedDirectories ?? [] where !paths.contains(directory) { paths.append(directory) }
         for directory in devin?.watchedDirectories ?? [] where !paths.contains(directory) { paths.append(directory) }
+        return paths
+    }
+
+    /// Bound descriptors independently of the size of the transcript backlog.
+    var activeFilePaths: [String] {
+        var paths = files.values.sorted {
+            $0.lastStat.modifiedNs != $1.lastStat.modifiedNs
+                ? $0.lastStat.modifiedNs > $1.lastStat.modifiedNs : $0.path < $1.path
+        }.prefix(32).map { file in
+            guard let resolved = realpath(file.path, nil) else { return file.path }
+            defer { free(resolved) }
+            return String(cString: resolved)
+        }
+        for source in opencode?.sources ?? [] where source.isReady {
+            if let path = source.canonicalDatabasePath {
+                paths.append(path)
+                if FileStat.stat(path + "-wal") != nil { paths.append(path + "-wal") }
+            }
+        }
         return paths
     }
 
@@ -450,6 +469,8 @@ final class TranscriptSession {
     }
 
     /// Reads the databases whose changes arrived while their reads were throttled (METRICS 5.4).
+    var hasDirtyDatabases: Bool { files.values.contains(where: \.isDirty) }
+
     @discardableResult
     func readDirtyDatabases() -> Bool {
         let now = DispatchTime.now().uptimeNanoseconds
@@ -472,7 +493,7 @@ final class TranscriptSession {
         for file in open.prefix(open.count - Self.maxOpenDatabases) { file.reader.closeConnection() }
     }
 
-    /// The 1-second fallback: stat files modified in the last two minutes.
+    /// While active, stat files modified in the last two minutes as a fallback.
     @discardableResult
     func pollRecentFiles(nowMs: Int64) -> Bool {
         var changed = false
@@ -556,6 +577,7 @@ final class TranscriptSession {
         }
         if let hermes { changed = apply(hermes.rediscover(deduper: &deduper), live: true) || changed }
         if let devin { changed = apply(devin.rediscover(todayStartMs: todayStartMs, deduper: &deduper), live: true) || changed }
+        closeIdleDatabases(nowNs: DispatchTime.now().uptimeNanoseconds)
         return refreshModeContext() || changed
     }
 
@@ -785,7 +807,8 @@ final class TranscriptSession {
             parentLinksAreStale = false
             remoteParentsChanged = false
         }
-        let output = engine.advance(nowMs: nowMs, todayStartMs: todayStartMs, emitsEvents: emitsEvents, subsets: subsets)
+        let output = engine.advance(nowMs: nowMs, todayStartMs: todayStartMs, emitsEvents: emitsEvents,
+                                    subsets: subsets, includeHistory: false)
         let events = pendingEvents + output.events
         pendingEvents.removeAll()
         return (output, events)

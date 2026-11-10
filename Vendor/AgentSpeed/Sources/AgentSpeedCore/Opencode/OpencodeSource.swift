@@ -64,6 +64,8 @@ final class OpencodeSource {
     private var database: OpencodeDatabase?
     private var databaseStat: FileStat?
     private var walStat: FileStat?
+    private var reconciledDatabaseStat: FileStat?
+    private var reconciledWalStat: FileStat?
     private var sessions: [String: TrackedSession] = [:]
     private var rowSessions: [String: String] = [:]
     /// Row id → (`time_updated`, still unfinished): rows re-read by id on every change.
@@ -155,6 +157,8 @@ final class OpencodeSource {
         database = nil
         databaseStat = nil
         walStat = nil
+        reconciledDatabaseStat = nil
+        reconciledWalStat = nil
         status = newStatus
     }
 
@@ -268,16 +272,23 @@ final class OpencodeSource {
 
     /// Periodic check: drops deleted sessions, picks up changed metadata and releases rows of quiet sessions.
     func rediscover(nowMs: Int64, deduper: inout Deduper) -> Update {
-        var update = refresh(deduper: &deduper)
-        guard status == .ready, let database, let all = try? database.sessions() else { return update }
-        let present = Set(all.map(\.id))
-        for id in sessions.keys where !present.contains(id) {
-            claims?.release(id, by: owner)
-            if let rows = sessions.removeValue(forKey: id)?.rows.keys {
-                for row in rows { rowSessions[row] = nil; watchedRows[row] = nil }
+        let dbStat = FileStat.stat(databasePath)
+        let wal = FileStat.stat(databasePath + "-wal")
+        var update = Update()
+        if dbStat != reconciledDatabaseStat || wal != reconciledWalStat {
+            update = refresh(deduper: &deduper)
+            guard status == .ready, let database, let all = try? database.sessions() else { return update }
+            reconciledDatabaseStat = dbStat
+            reconciledWalStat = wal
+            let present = Set(all.map(\.id))
+            for id in sessions.keys where !present.contains(id) {
+                claims?.release(id, by: owner)
+                if let rows = sessions.removeValue(forKey: id)?.rows.keys {
+                    for row in rows { rowSessions[row] = nil; watchedRows[row] = nil }
+                }
+                update.removedAgents.append(OpencodeRules.agentId(session: id))
+                update.agents[OpencodeRules.agentId(session: id)] = nil
             }
-            update.removedAgents.append(OpencodeRules.agentId(session: id))
-            update.agents[OpencodeRules.agentId(session: id)] = nil
         }
         for (id, tracked) in sessions where !tracked.rows.isEmpty && tracked.state.phase != .generating {
             guard let last = tracked.state.lastLineMs, nowMs - last > Self.compactAfterMs else { continue }

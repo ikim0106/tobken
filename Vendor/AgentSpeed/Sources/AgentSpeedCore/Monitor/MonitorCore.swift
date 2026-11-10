@@ -1,14 +1,13 @@
 import Foundation
 import os
 
-/// Runs a `TranscriptSession` on a private serial queue: seeding, FSEvents, the fallback stat loop,
-/// rediscovery and periodic publishing.
+/// Runs a `TranscriptSession` on a private serial queue. File notifications wake idle sessions;
+/// a one-second update runs only while active, with slower rediscovery as a fallback.
 ///
 /// `@unchecked Sendable`: every mutable property is only touched on `queue`; the cancellation flag and the requested
 /// source sets are locked.
 final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
-    static let publishInterval: DispatchTimeInterval = .milliseconds(500)
-    static let pollInterval: DispatchTimeInterval = .seconds(1)
+    static let publishInterval: DispatchTimeInterval = .seconds(1)
     static let rediscoveryInterval: DispatchTimeInterval = .seconds(10)
     static let changeDebounce: DispatchTimeInterval = .milliseconds(80)
     static let watcherLatency: TimeInterval = 0.1
@@ -35,6 +34,11 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
     /// Live reporting's watch epoch (METRICS 11.10), applied to every session this core creates.
     private var reportWatch: Int?
     private var watcher: DirectoryWatcher?
+    private var fileWatcher: ActiveFileWatcher?
+    private var updateTimer: DispatchSourceTimer?
+    private var lastPublishedNs: UInt64 = 0
+    private var context: SnapshotContext?
+    private var dayStartMs: Int64?
     private var watchedPaths: [String] = []
     private var timers: [DispatchSourceTimer] = []
     private var isLive = false
@@ -65,6 +69,7 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
 
     /// An abandoned core (its owner released it without `stop()`) still releases its timers and stream.
     deinit {
+        updateTimer?.cancel()
         for timer in timers { timer.cancel() }
         watcher?.stop()
     }
@@ -169,8 +174,6 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
         isLive = true
         updateWatcher()
         timers = [
-            makeTimer(every: Self.publishInterval, leeway: .milliseconds(50)) { [weak self] in self?.publish() },
-            makeTimer(every: Self.pollInterval, leeway: .milliseconds(100)) { [weak self] in self?.poll() },
             makeTimer(every: rediscoveryEvery, leeway: .seconds(1)) { [weak self] in self?.rediscover() },
         ]
         publish()
@@ -188,6 +191,12 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
         cancelTimers()
         watcher?.stop()
         watcher = nil
+        fileWatcher = nil
+        updateTimer?.cancel()
+        updateTimer = nil
+        context = nil
+        dayStartMs = nil
+        lastPublishedNs = 0
         watchedPaths = []
         session = nil
         isLive = false
@@ -225,6 +234,8 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
         if changed {
             observe(began)
             publish()
+        } else if session.hasDirtyDatabases {
+            scheduleUpdate(after: Self.publishInterval)
         }
     }
 
@@ -247,15 +258,6 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
         }
     }
 
-    private func poll() {
-        guard let session, isLive else { return }
-        let began = Clock.monotonicMs()
-        if session.pollRecentFiles(nowMs: Clock.milliseconds(Date())) {
-            observe(began)
-            publish()
-        }
-    }
-
     private func rediscover() {
         guard let session, isLive else { return }
         // A new or removed Pi folder, OpenClaw state folder or agent-scoped Codex home is read like at startup: older
@@ -264,7 +266,7 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
         let began = Clock.monotonicMs()
         let changed = session.rediscover(todayStartMs: Self.todayStartMs(for: Date()))
         updateWatcher()
-        if changed {
+        if changed || dayStartMs != Self.todayStartMs(for: Date()) {
             observe(began)
             publish()
         }
@@ -293,24 +295,61 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
     }
 
     private func observe(_ began: Int64) {
+        context = nil
         observedAtMs = min(observedAtMs ?? began, began)
     }
 
     private func publish() {
+        let elapsed = DispatchTime.now().uptimeNanoseconds &- lastPublishedNs
+        guard lastPublishedNs == 0 || elapsed >= 1_000_000_000 else {
+            scheduleUpdate(after: .nanoseconds(Int(1_000_000_000 - elapsed)))
+            return
+        }
+        publishNow()
+    }
+
+    private func publishNow() {
         guard let session, isLive else { return }
+        updateTimer?.cancel()
+        updateTimer = nil
         let began = Clock.monotonicMs()
         if session.readDirtyDatabases() { observe(began) }
+        if context == nil { updateFileWatcher() }
         let now = Date()
         let todayStartMs = Self.todayStartMs(for: now)
         let requested = subsets.withLock { $0 }
         let (output, events) = session.advance(
             nowMs: Clock.milliseconds(now), todayStartMs: todayStartMs, emitsEvents: true, subsets: requested
         )
-        let context = SnapshotContext(session: session, todayStartMs: todayStartMs)
+        if context == nil || self.dayStartMs != todayStartMs {
+            context = SnapshotContext(session: session, todayStartMs: todayStartMs)
+        }
+        self.dayStartMs = todayStartMs
+        guard let context else { return }
         var snapshot = SnapshotBuilder.running(output, context: context)
         snapshot.observedAtMs = observedAtMs
         observedAtMs = nil
         mailbox.post(snapshot, events: events)
+        lastPublishedNs = DispatchTime.now().uptimeNanoseconds
+        if output.live.output > 0 || session.hasDirtyDatabases {
+            scheduleUpdate(after: Self.publishInterval)
+        }
+    }
+
+    private func scheduleUpdate(after interval: DispatchTimeInterval) {
+        guard updateTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + interval, leeway: .milliseconds(100))
+        timer.setEventHandler { [weak self] in
+            guard let self, let session, isLive else { return }
+            let began = Clock.monotonicMs()
+            if session.pollRecentFiles(nowMs: Clock.milliseconds(Date())) {
+                observe(began)
+            }
+            publishNow()
+        }
+        updateTimer = timer
+        timer.resume()
     }
 
     private func publishPlaceholder(_ state: MonitorState, session: TranscriptSession) {
@@ -330,6 +369,17 @@ final class MonitorCore: RemoteFeedSink, @unchecked Sendable {
             self?.handle(events)
         }
         watchedPaths = watcher == nil ? [] : paths
+        updateFileWatcher()
+    }
+
+    private func updateFileWatcher() {
+        guard let session else { return }
+        if fileWatcher == nil {
+            fileWatcher = ActiveFileWatcher(queue: queue) { [weak self] path in
+                self?.handle([DirectoryWatcher.Event(path: path, needsRescan: false)])
+            }
+        }
+        fileWatcher?.update(paths: session.activeFilePaths)
     }
 
     private func makeTimer(

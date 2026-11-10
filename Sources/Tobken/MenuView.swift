@@ -131,7 +131,7 @@ struct MenuView: View {
                         .font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
                     Text("TPS").foregroundStyle(.secondary)
                 }
-            }.help("Output tokens per second across concurrent requests, over a trailing 3-second window. Rates are reconstructed from transcript timing; in-flight requests use recent response rates.")
+            }.help("New output tokens logged in the last 5 seconds, divided by 5. Quiet seconds count as zero. Tools that report usage only at completion produce bursts; this is observed log throughput, not inferred streaming speed.")
             Spacer(minLength: 0)
             if model.selectedSource == nil {
                 TPSChart(history: model.tpsHistory, color: green)
@@ -139,7 +139,7 @@ struct MenuView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Avg TPS").foregroundStyle(.secondary)
                 Text(MetricFormat.rate(dashboard.summary.averageTPS)).monospacedDigit().fontWeight(.medium)
-            }.help("Today's output tokens divided by summed request durations. Includes waiting for the first token; concurrent requests are averaged by duration.")
+            }.help("Today's output tokens divided by summed request durations. Includes TTFT and pauses within a request. Excludes idle time between requests; concurrent requests are averaged by duration.")
         }
         .padding(.top, 1)
     }

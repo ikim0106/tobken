@@ -8,6 +8,15 @@ today. TPS always counts output; input/cache must never increase it. Preserve
 unknown and estimated readings separately from zero. Filters change the open
 menu, while the status item always shows the global total.
 Display TPS and TTFT without `~` prefixes; explain approximations in tooltips.
+Current TPS counts newly observed output usage in the last five seconds / five,
+including quiet seconds. Never substitute historical request speeds for new
+output. Completion-only logs may produce bursts; describe this in tooltips.
+Request averages include within-request waits and exclude idle between requests.
+
+Resource use is a product requirement. Stop live refresh timers when idle, cap
+active publishing at once per second, and use incremental file notifications.
+Avoid redrawing unchanged status text or retaining closed SwiftUI views. Measure
+release CPU and physical footprint before claiming an improvement.
 
 `Vendor/AgentSpeed` is pinned source, with local changes recorded in its
 `UPSTREAM.md`. Extend its existing request ledger rather than rescanning histories

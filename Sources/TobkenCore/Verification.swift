@@ -40,6 +40,7 @@ public enum Verification {
         }
         try await wait { store.snapshot.state == .running && store.snapshot.today.output == 200 }
         guard store.snapshot.today.total == 1_200 else { throw Failure.assertion("Expected 1200 tokens after seed") }
+        guard store.snapshot.live.output == 0 else { throw Failure.assertion("Startup history became current TPS") }
         guard store.snapshot.activities.reduce(0, { $0 + $1.totals.total }) == 1_200 else {
             throw Failure.assertion("Model breakdown does not match seed total")
         }
@@ -50,6 +51,7 @@ public enum Verification {
         try await wait { store.snapshot.today.output == 600 }
         let snapshot = store.snapshot
         let dashboard = Dashboard(snapshot: snapshot)
+        guard snapshot.live.output == 80 else { throw Failure.assertion("Expected 400 new output tokens / 5 seconds = 80 TPS") }
         let filtered = Dashboard(snapshot: snapshot, selectedSource: .claudeCode)
         guard dashboard.totals.total == 4_600, dashboard.models.reduce(0, { $0 + $1.metrics.totals.total }) == 4_600,
               filtered.totals.total == 0, filtered.statusTitle == dashboard.statusTitle else {
@@ -58,12 +60,14 @@ public enum Verification {
         guard snapshot.activities.allSatisfy({ $0.ttftP50 == nil }) else {
             throw Failure.assertion("Missing TTFT was fabricated")
         }
+        try await wait { store.snapshot.live.output == 0 }
         monitor.stop()
         let restartedStore = SpeedStore()
         let restarted = LiveMonitor(store: restartedStore, configuration: monitor.configuration)
         restarted.start()
         defer { restarted.stop() }
         try await wait { restartedStore.snapshot.state == .running && restartedStore.snapshot.today.total == 4_600 }
-        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved."
+        guard restartedStore.snapshot.live.output == 0 else { throw Failure.assertion("Restart invented live TPS") }
+        return "PASS: seed 1,200 → append 4,600 → restart 4,600; model totals match; filters preserve status total; unknown TTFT preserved; observed TPS 0 → 80 → 0."
     }
 }

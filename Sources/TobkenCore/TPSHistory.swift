@@ -15,6 +15,17 @@ public struct TPSHistory: Equatable, Sendable {
 
     public mutating func record(at time: Date, value: Double?) {
         if let last = samples.last, time < last.time { return }
+        // The monitor sleeps after publishing zero. Fill that known quiet interval when it wakes,
+        // without keeping a timer alive just to draw zeros in a closed menu.
+        if let last = samples.last, last.value == 0, time.timeIntervalSince(last.time) > 1 {
+            let firstSecond = max(floor(last.time.timeIntervalSince1970) + 1,
+                                  ceil(time.timeIntervalSince1970 - Self.duration))
+            let endSecond = floor(time.timeIntervalSince1970)
+            for second in stride(from: firstSecond, to: endSecond, by: 1) {
+                samples.append(Sample(time: Date(timeIntervalSince1970: second), value: 0))
+            }
+            if time.timeIntervalSince(last.time) >= Self.duration { ceiling = 100 }
+        }
         let value = value.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
         let sample = Sample(time: time, value: value)
         if let last = samples.last,

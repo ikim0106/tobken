@@ -74,10 +74,7 @@ public struct Dashboard {
     }
 
     public var currentTPS: Double? {
-        let generating = selectedSource == nil ? snapshot.generatingCount > 0 : snapshot.agents.contains {
-            $0.source == selectedSource && $0.phase == .generating
-        }
-        return generating && liveTPS == 0 ? nil : liveTPS
+        snapshot.state == .running ? liveTPS : nil
     }
 
     public var sources: [SourceStatus] {

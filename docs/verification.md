@@ -55,7 +55,7 @@ engine. They do not establish compatibility with every installed version of
 every supported harness. Upstream parser fixtures were investigated separately;
 see the [research results](../research/reports/verification.md).
 
-Current TPS and TTFT remain estimates from transcript timing. There is no
+TTFT and request TPS use transcript timing. There is no
 interception of actual token streaming, Cursor reader, remote aggregation, or
 browser chat tracking in this version.
 
@@ -80,3 +80,37 @@ Tobken sets its own `AppleShowScrollBars` preference to `WhenScrolling` before
 initializing AppKit. This selects the native overlay scrollbars that fade after
 activity stops. The native smoke test checks the real `NSScrollView` instances
 in the menu and Settings use `.overlay`. System-wide preferences are untouched.
+
+## Resource use and observed TPS
+
+`Scripts/test.sh`: **21 tests passed**. The packaged release also passed
+`--verify`, `--ui-smoke-test`, and strict code-signature verification. Light and
+dark previews were inspected after the changes.
+
+The actual monitor now proves that idle snapshots stop, an open writer's
+append wakes it within two seconds (without the ten-second fallback), bursts
+publish at most once per second, atomic file replacement keeps working and
+`stop()` cancels delivery. The temporary-folder test caught and fixed a
+Foundation path canonicalization mismatch with Darwin `realpath`.
+
+Additional tests prove the five-second observed output window includes quiet
+seconds, does not predict output from an active flag or a historical rate,
+expires even while the agent remains active, ignores input, counts cumulative
+usage deltas once and handles duplicate finalization, corrections and model
+identification. Startup history establishes a baseline and cannot become live
+TPS. The packaged verifier observes **0 → 80 → 0 TPS** from an appended
+400-output-token record, preserving the seed/append/restart totals above.
+
+The graph fills known idle time with zeros without waking the collector to
+draw. Unknown readings still leave gaps. Request averages continue to divide
+output by logged request duration, including TTFT and within-request pauses;
+idle time between requests is excluded.
+
+OpenCode's regression test covers deletion reconciliation after a live refresh
+has already advanced its file signature. The UI test checks menu views are
+absent before opening and released after closing, Settings releases its window
+and the dropdown reopens successfully.
+
+See [resource measurements](resource-use.md) for release CPU, footprint, run
+conditions, raw samples and the sampling script. These are quiet-workload
+measurements, not a claim about peak startup or sustained output workloads.

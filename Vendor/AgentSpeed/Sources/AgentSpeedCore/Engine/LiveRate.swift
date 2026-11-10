@@ -153,6 +153,13 @@ struct LiveWindow: Sendable {
     /// The live values per (host, source) cell; empty unless the window was asked for them.
     private(set) var byCell: [HostSource: EngineCell] = [:]
 
+    init(total: Rate, activities: [ActivityKey: Double], sources: [SourceKind: Rate], agents: [String: Rate]) {
+        self.total = total
+        activityTPS = activities
+        bySource = sources
+        byAgent = agents
+    }
+
     /// `latestEnds` holds the latest end of any stored response per agent; an estimate starts no earlier, so a
     /// response that is still being written is never counted twice.
     /// `measured` and `unmeasured` hold valid-interval responses that are final and unfinalized respectively.

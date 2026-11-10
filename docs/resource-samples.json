@@ -1,0 +1,312 @@
+{
+  "logical_cpus": 11,
+  "load": [
+    2.623046875,
+    3.39013671875,
+    3.6015625
+  ],
+  "samples": [
+    {
+      "round": 1,
+      "seconds": 10.00329175,
+      "cpu_percent": 0.24890130791196807,
+      "footprint_mib": 78.70390319824219,
+      "idle_wakeups_per_second": 0.2999012799961573,
+      "disk_read_bytes": 0,
+      "disk_written_bytes": 0,
+      "build": "before"
+    },
+    {
+      "round": 1,
+      "seconds": 10.003338625,
+      "cpu_percent": 0.10094611787672038,
+      "footprint_mib": 74.18827819824219,
+      "idle_wakeups_per_second": 0.09996662489269677,
+      "disk_read_bytes": 32768,
+      "disk_written_bytes": 0,
+      "build": "after"
+    },
+    {
+      "round": 2,
+      "seconds": 10.001210458,
+      "cpu_percent": 0.0357002486348438,
+      "footprint_mib": 74.48515319824219,
+      "idle_wakeups_per_second": 0.0,
+      "disk_read_bytes": 9224192,
+      "disk_written_bytes": 0,
+      "build": "after"
+    },
+    {
+      "round": 2,
+      "seconds": 10.001224125,
+      "cpu_percent": 0.17345288719844582,
+      "footprint_mib": 78.93827819824219,
+      "idle_wakeups_per_second": 0.1999755204965972,
+      "disk_read_bytes": 0,
+      "disk_written_bytes": 0,
+      "build": "before"
+    },
+    {
+      "round": 3,
+      "seconds": 10.004132125,
+      "cpu_percent": 0.1987033033112805,
+      "footprint_mib": 79.07890319824219,
+      "idle_wakeups_per_second": 0.29987608745221367,
+      "disk_read_bytes": 2392064,
+      "disk_written_bytes": 0,
+      "build": "before"
+    },
+    {
+      "round": 3,
+      "seconds": 10.004167792,
+      "cpu_percent": 0.03824118187081283,
+      "footprint_mib": 74.23515319824219,
+      "idle_wakeups_per_second": 0.29987501832976055,
+      "disk_read_bytes": 0,
+      "disk_written_bytes": 0,
+      "build": "after"
+    },
+    {
+      "round": 4,
+      "seconds": 10.000184625,
+      "cpu_percent": 0.04141209542918814,
+      "footprint_mib": 74.28202819824219,
+      "idle_wakeups_per_second": 0.29999446135225727,
+      "disk_read_bytes": 0,
+      "disk_written_bytes": 0,
+      "build": "after"
+    },
+    {
+      "round": 4,
+      "seconds": 10.000197333,
+      "cpu_percent": 0.20571154063245523,
+      "footprint_mib": 78.75077819824219,
+      "idle_wakeups_per_second": 0.2999940801268186,
+      "disk_read_bytes": 6815744,
+      "disk_written_bytes": 0,
+      "build": "before"
+    },
+    {
+      "round": 5,
+      "seconds": 10.005078167,
+      "cpu_percent": 0.19454259801986412,
+      "footprint_mib": 79.36015319824219,
+      "idle_wakeups_per_second": 0.0,
+      "disk_read_bytes": 9224192,
+      "disk_written_bytes": 0,
+      "build": "before"
+    },
+    {
+      "round": 5,
+      "seconds": 10.005112375,
+      "cpu_percent": 0.030852736923906863,
+      "footprint_mib": 74.53202819824219,
+      "idle_wakeups_per_second": 0.0,
+      "disk_read_bytes": 0,
+      "disk_written_bytes": 0,
+      "build": "after"
+    }
+  ],
+  "summary": {
+    "before": {
+      "cpu_percent": {
+        "median": 0.1987033033112805,
+        "min": 0.17345288719844582,
+        "max": 0.24890130791196807
+      },
+      "footprint_mib": {
+        "median": 78.93827819824219,
+        "min": 78.70390319824219,
+        "max": 79.36015319824219
+      },
+      "idle_wakeups_per_second": {
+        "median": 0.29987608745221367,
+        "min": 0.0,
+        "max": 0.2999940801268186
+      }
+    },
+    "after": {
+      "cpu_percent": {
+        "median": 0.03824118187081283,
+        "min": 0.030852736923906863,
+        "max": 0.10094611787672038
+      },
+      "footprint_mib": {
+        "median": 74.28202819824219,
+        "min": 74.18827819824219,
+        "max": 74.53202819824219
+      },
+      "idle_wakeups_per_second": {
+        "median": 0.09996662489269677,
+        "min": 0.0,
+        "max": 0.29999446135225727
+      }
+    }
+  },
+  "conditions": {
+    "date": "2026-11-10",
+    "before": "c7e972f, preserved executable in a separately signed copy of the same app bundle",
+    "after": "final signed release with observed five-second TPS and idle scheduling",
+    "workload": "local logs, native menus closed, both releases freshly launched and startup settled",
+    "sampling": "five paired ten-second windows; PID read order alternated",
+    "cpu_unit": "percent of one logical core; 100% means one fully used core",
+    "memory_unit": "MiB physical footprint, not peak startup memory",
+    "idle_wakeups_unit": "package idle wakeups per second, not all dispatch callbacks"
+  },
+  "earlier_comparison": {
+    "logical_cpus": 11,
+    "load": [
+      3.97900390625,
+      3.720703125,
+      3.7802734375
+    ],
+    "samples": [
+      {
+        "round": 1,
+        "seconds": 10.005117542,
+        "cpu_percent": 0.1664411830255337,
+        "footprint_mib": 81.73524475097656,
+        "idle_wakeups_per_second": 0.9994885075584052,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "before"
+      },
+      {
+        "round": 1,
+        "seconds": 10.005142958,
+        "cpu_percent": 0.02336441378012342,
+        "footprint_mib": 81.12580108642578,
+        "idle_wakeups_per_second": 0.1998971937128417,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "after"
+      },
+      {
+        "round": 2,
+        "seconds": 10.004063458,
+        "cpu_percent": 0.004523441918374924,
+        "footprint_mib": 81.01642608642578,
+        "idle_wakeups_per_second": 0.0,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "after"
+      },
+      {
+        "round": 2,
+        "seconds": 10.004095792,
+        "cpu_percent": 0.1352029037028637,
+        "footprint_mib": 81.75086975097656,
+        "idle_wakeups_per_second": 0.09995905884864402,
+        "disk_read_bytes": 16384,
+        "disk_written_bytes": 0,
+        "build": "before"
+      },
+      {
+        "round": 3,
+        "seconds": 10.000628834,
+        "cpu_percent": 0.15309432290845482,
+        "footprint_mib": 80.20399475097656,
+        "idle_wakeups_per_second": 0.19998742411081466,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "before"
+      },
+      {
+        "round": 3,
+        "seconds": 10.00065025,
+        "cpu_percent": 0.005605785483798916,
+        "footprint_mib": 81.01642608642578,
+        "idle_wakeups_per_second": 0.0,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "after"
+      },
+      {
+        "round": 4,
+        "seconds": 10.002010417,
+        "cpu_percent": 0.0044249104084891295,
+        "footprint_mib": 81.01642608642578,
+        "idle_wakeups_per_second": 0.0,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "after"
+      },
+      {
+        "round": 4,
+        "seconds": 10.002036833,
+        "cpu_percent": 0.17812639862731047,
+        "footprint_mib": 80.07899475097656,
+        "idle_wakeups_per_second": 0.19995927163568764,
+        "disk_read_bytes": 11829248,
+        "disk_written_bytes": 0,
+        "build": "before"
+      },
+      {
+        "round": 5,
+        "seconds": 10.004972542,
+        "cpu_percent": 0.20748012963412288,
+        "footprint_mib": 80.56336975097656,
+        "idle_wakeups_per_second": 0.7996023943510788,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "before"
+      },
+      {
+        "round": 5,
+        "seconds": 10.0050155,
+        "cpu_percent": 0.06717859657488787,
+        "footprint_mib": 86.84455108642578,
+        "idle_wakeups_per_second": 0.09994987014262996,
+        "disk_read_bytes": 0,
+        "disk_written_bytes": 0,
+        "build": "after"
+      }
+    ],
+    "summary": {
+      "before": {
+        "cpu_percent": {
+          "median": 0.1664411830255337,
+          "min": 0.1352029037028637,
+          "max": 0.20748012963412288
+        },
+        "footprint_mib": {
+          "median": 80.56336975097656,
+          "min": 80.07899475097656,
+          "max": 81.75086975097656
+        },
+        "idle_wakeups_per_second": {
+          "median": 0.19998742411081466,
+          "min": 0.09995905884864402,
+          "max": 0.9994885075584052
+        }
+      },
+      "after": {
+        "cpu_percent": {
+          "median": 0.005605785483798916,
+          "min": 0.0044249104084891295,
+          "max": 0.06717859657488787
+        },
+        "footprint_mib": {
+          "median": 81.01642608642578,
+          "min": 81.01642608642578,
+          "max": 86.84455108642578
+        },
+        "idle_wakeups_per_second": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.1998971937128417
+        }
+      }
+    },
+    "conditions": {
+      "date": "2026-11-10",
+      "before": "c7e972f",
+      "after": "working tree with observed five-second TPS and idle scheduling",
+      "workload": "quiet local logs, native menu closed, startup settled",
+      "sampling": "five paired ten-second windows; PID read order alternated",
+      "cpu_unit": "percent of one logical core; 100% means one fully used core",
+      "memory_unit": "MiB physical footprint, not peak startup memory",
+      "idle_wakeups_unit": "package idle wakeups per second, not all dispatch callbacks"
+    }
+  }
+}
