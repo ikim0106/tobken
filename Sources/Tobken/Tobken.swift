@@ -111,7 +111,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if button.title != text { button.title = text }
         // The popover is anchored to this item: while it is open, keep the width (grow only if text would clip).
         if popover.isShown {
-            let current = item.length == NSStatusItem.variableLength ? button.frame.width : item.length
+            let current = item.length == NSStatusItem.variableLength ? button.intrinsicContentSize.width : item.length
             item.length = max(current, button.intrinsicContentSize.width.rounded(.up))
             return
         }
@@ -133,8 +133,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSPopoverDelegate, N
         if popover.isShown { popover.performClose(nil) }
         else {
             prepareMenu()
-            // Freeze the anchor's width at what is on screen, so the open popover never slides sideways.
-            if let item = statusItem, item.length == NSStatusItem.variableLength { item.length = button.frame.width }
+            // Freeze the anchor's width at what is on screen, so the open popover never slides sideways. A fixed
+            // `length` excludes the item's padding (a variable item's button frame includes it), so freeze at the
+            // intrinsic width; `button.frame.width` would widen the item by the padding and the popover would
+            // jump left on its next resize.
+            if let item = statusItem, item.length == NSStatusItem.variableLength {
+                item.length = button.intrinsicContentSize.width
+            }
             NSApp.activate()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
