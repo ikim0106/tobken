@@ -18,6 +18,7 @@ cp "$binary" "$app_dir/Contents/MacOS/Tobken"
 cp Resources/Info.plist "$app_dir/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" \
   -c "Set :CFBundleVersion $build_number" "$app_dir/Contents/Info.plist"
+cp LICENSE "$app_dir/Contents/Resources/Licenses/Tobken.txt"
 cp Vendor/AgentSpeed/LICENSE "$app_dir/Contents/Resources/Licenses/AgentSpeed.txt"
 cp Vendor/AgentSpeed/Sources/CZstd/LICENSE "$app_dir/Contents/Resources/Licenses/Zstd.txt"
 cp Vendor/CodexBar/LICENSE "$app_dir/Contents/Resources/Licenses/CodexBar.txt"

@@ -137,6 +137,18 @@ remaining reporting and remote code is compiled because the engine references
 its types, but Tobken never starts it. See
 [provenance](Vendor/AgentSpeed/UPSTREAM.md) for the exact list.
 
+## License
+
+Tobken-specific additions are licensed under the [MIT License](LICENSE).
+Third-party code retains its original copyright notices and licenses:
+
+- [AgentSpeed](Vendor/AgentSpeed/UPSTREAM.md): [MIT](Vendor/AgentSpeed/LICENSE).
+- [CodexBar layout code](Vendor/CodexBar/UPSTREAM.md): [MIT](Vendor/CodexBar/LICENSE).
+- Zstandard: [BSD-3-Clause](Vendor/AgentSpeed/Sources/CZstd/LICENSE).
+
+The build includes Tobken's license and these third-party license texts in
+`Tobken.app/Contents/Resources/Licenses/`.
+
 ## Investigation
 
 - [Full investigation](research/reports/investigation.md)
